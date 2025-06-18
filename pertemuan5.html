@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Visualisasi Kurva Bezier</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background: #f9fafb;
+      margin: 0;
+      padding: 2rem;
+      display: grid;
+      gap: 2rem;
+    }
+    section {
+      background: #fff;
+      padding: 1.5rem;
+      border-radius: 1rem;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+    }
+    h1, h2 { margin-top: 0; }
+    canvas {
+      border: 1px solid #e5e7eb;
+      border-radius: .5rem;
+      background: #fff;
+    }
+    label, input {
+      margin: .25rem;
+    }
+    button {
+      padding: .5rem .75rem;
+      border: none;
+      background: #2563eb;
+      color: white;
+      border-radius: .5rem;
+      cursor: pointer;
+    }
+    pre.formula {
+      background: #f1f5f9;
+      padding: 1rem;
+      overflow: auto;
+      border-radius: .75rem;
+      font-size: .9rem;
+    }
+  </style>
+</head>
+<body>
+  <section>
+    <h1>Visualisasi Kurva Bezier</h1>
+    <p>Klik pada kanvas untuk menambahkan titik kontrol (minimal 2, maksimal 6). Setelah itu klik "Gambar Kurva" untuk melihat hasilnya.</p>
+    <button onclick="clearCanvas()">Bersihkan</button>
+    <button onclick="drawBezier()">Gambar Kurva</button>
+    <canvas id="canvas" width="500" height="400"></canvas>
+    <div id="pointList" style="font-size: 0.9rem; color:#374151;"></div>
+  </section>
+  <section>
+    <h2>Persamaan Kurva Bezier</h2>
+    <pre class="formula">B(t) = ∑ [i=0 to n] (C(n,i) * (1-t)^(n-i) * t^i * Pi)
+
+Dimana:
+C(n,i) = n! / (i!(n-i)!)
+Pi = Titik kontrol ke-i
+0 ≤ t ≤ 1
+Δt menentukan seberapa halus kurva (contoh: 0.01)</pre>
+  </section>
+
+  <script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const points = [];
+
+    canvas.addEventListener('click', e => {
+      if (points.length >= 6) return alert("Maksimum 6 titik kontrol.");
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      points.push({ x, y });
+      updatePointList();
+      drawPoints();
+    });
+
+    function updatePointList() {
+      const list = points.map((p, i) => `P${i}(${p.x.toFixed(1)}, ${p.y.toFixed(1)})`).join(', ');
+      document.getElementById('pointList').textContent = `Titik kontrol: ${list}`;
+    }
+
+    function factorial(n) {
+      return n <= 1 ? 1 : n * factorial(n - 1);
+    }
+
+    function combination(n, k) {
+      return factorial(n) / (factorial(k) * factorial(n - k));
+    }
+
+    function bezier(t, pts) {
+      const n = pts.length - 1;
+      let x = 0, y = 0;
+      for (let i = 0; i <= n; i++) {
+        const bin = combination(n, i);
+        const coeff = bin * Math.pow(1 - t, n - i) * Math.pow(t, i);
+        x += coeff * pts[i].x;
+        y += coeff * pts[i].y;
+      }
+      return { x, y };
+    }
+
+    function drawPoints() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#0ea5e9';
+      points.forEach(p => {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+
+    function drawBezier() {
+      if (points.length < 2) return alert("Minimal 2 titik kontrol diperlukan.");
+      drawPoints();
+      ctx.beginPath();
+      ctx.moveTo(points[0].x, points[0].y);
+      for (let t = 0; t <= 1; t += 0.01) {
+        const { x, y } = bezier(t, points);
+        ctx.lineTo(x, y);
+      }
+      ctx.strokeStyle = '#ef4444';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+
+    function clearCanvas() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      points.length = 0;
+      updatePointList();
+    }
+  </script>
+</body>
+</html>

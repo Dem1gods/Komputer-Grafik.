@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Visualisasi Algoritma Garis &amp; Poligon</title>
+  <style>
+    :root {
+      --bg: #f9fafb;
+      --card: #ffffff;
+      --accent: #2563eb;
+      --border: #e5e7eb;
+      --radius: 1rem;
+      --shadow: 0 4px 10px rgb(0 0 0 / .08);
+      font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    body {
+      margin: 0;
+      padding: 1rem;
+      background: var(--bg);
+      display: grid;
+      gap: 2rem;
+    }
+    h1,h2 {margin: 0 0 1rem;}
+    section.card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      box-shadow: var(--shadow);
+      display: grid;
+      gap: 1rem;
+    }
+
+    label {display: flex; align-items: center; gap:.5rem; font-size:.9rem;}
+    input[type="number"]{width:4rem;}
+    select,button{padding:.4rem .8rem;border-radius:.5rem;border:1px solid var(--border);background:#fff;cursor:pointer;}
+    button{background:var(--accent);color:#fff;border:none}
+    canvas{border:1px solid var(--border);border-radius:.25rem;background:#fff}
+    pre.formula{background:#f3f4f6;padding:1rem;border-radius:var(--radius);overflow:auto;font-size:.85rem}
+
+    @media(min-width:800px){body{grid-template-columns:repeat(2,1fr);}header{grid-column:1/-1;text-align:center}}
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Algoritma Garis &amp; Poligon – Demonstrasi Interaktif</h1>
+    <p>Uji coba algoritma DDA, Bresenham, dan Scanline Fill langsung di browser.</p>
+  </header>
+
+  <!-- Garis Section -->
+  <section class="card" id="line-sec">
+    <h2>Gambarlah Garis</h2>
+    <div style="display:flex;flex-wrap:wrap;gap:.75rem;align-items:center">
+      <label>x<sub>1</sub><input type="number" id="x1" value="2"></label>
+      <label>y<sub>1</sub><input type="number" id="y1" value="1"></label>
+      <label>x<sub>2</sub><input type="number" id="x2" value="8"></label>
+      <label>y<sub>2</sub><input type="number" id="y2" value="5"></label>
+      <label>Algoritma
+        <select id="algo-line">
+          <option value="dda">DDA</option>
+          <option value="bresenham">Bresenham</option>
+        </select>
+      </label>
+      <button id="drawLineBtn">Gambar</button>
+      <button id="clearBtn" style="background:#6b7280">Bersihkan</button>
+    </div>
+    <canvas id="canvas" width="420" height="420"></canvas>
+  </section>
+
+  <!-- Polygon Section -->
+  <section class="card" id="poly-sec">
+    <h2>Isi Warna Poligon (Scanline)</h2>
+    <p>Klik beberapa titik pada kanvas untuk membentuk poligon, lalu tekan <em>Fill</em>.</p>
+    <div style="display:flex;gap:.75rem;align-items:center">
+      <button id="finishPolyBtn">Fill</button>
+      <button id="resetPolyBtn" style="background:#6b7280">Reset</button>
+    </div>
+    <div id="polyVertexList" style="font-size:.85rem;color:#374151"></div>
+  </section>
+
+  <!-- Formula Section -->
+  <section class="card" id="formula-sec" style="grid-column:1/-1">
+    <h2>Rumus Inti</h2>
+    <pre class="formula"><code>// DIGITAL DIFFERENTIAL ANALYZER (DDA)
+dx = x2 - x1
+dy = y2 - y1
+steps = max(|dx|, |dy|)
+x_inc = dx / steps
+y_inc = dy / steps
+
+// BRESENHAM (gradien |m| ≤ 1)
+initial d = 2·dy - dx
+Jika d < 0 → (x+1, y) ; d += 2·dy
+Jika d ≥ 0 → (x+1, y+1); d += 2·(dy - dx)
+
+// SCANLINE FILL
+Untuk setiap y dari ymin → ymax
+  cari titik potong sisi poligon ⇒ x_intersections[]
+  urutkan x_intersections
+  warnai piksel di antara pasangan (x1, x2)</code></pre>
+  </section>
+
+  <script>
+    /* === Canvas Setup === */
+    const cvs = document.getElementById('canvas');
+    const ctx = cvs.getContext('2d');
+    const SIZE = cvs.width;
+    const STEP = 20; // 20px = 1 unit
+    const ORIGIN = {x: STEP, y: SIZE-STEP}; // bottom-left margin
+
+    function drawGrid(){
+      ctx.clearRect(0,0,SIZE,SIZE);
+      ctx.fillStyle = '#fff'; ctx.fillRect(0,0,SIZE,SIZE);
+      ctx.strokeStyle = '#e5e7eb'; ctx.lineWidth = 1;
+      for(let x=ORIGIN.x; x<=SIZE-STEP; x+=STEP){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,SIZE); ctx.stroke(); }
+      for(let y=ORIGIN.y; y>=STEP; y-=STEP){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(SIZE,y); ctx.stroke(); }
+      // axes
+      ctx.strokeStyle = '#9ca3af';
+      ctx.beginPath(); ctx.moveTo(ORIGIN.x,0); ctx.lineTo(ORIGIN.x,SIZE); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0,ORIGIN.y); ctx.lineTo(SIZE,ORIGIN.y); ctx.stroke();
+    }
+    function logicalToCanvas(x,y){
+      return [ORIGIN.x + x*STEP, ORIGIN.y - y*STEP];
+    }
+    function plot(x,y,color='#ef4444'){
+      const [cx,cy] = logicalToCanvas(x,y);
+      ctx.fillStyle = color;
+      ctx.fillRect(cx-STEP/4, cy-STEP/4, STEP/2, STEP/2);
+    }
+
+    /* === Algorithms === */
+    function dda(x1,y1,x2,y2){
+      const dx = x2 - x1, dy = y2 - y1;
+      const steps = Math.max(Math.abs(dx), Math.abs(dy));
+      const x_inc = dx/steps, y_inc = dy/steps;
+      let x = x1, y=y1, pts=[];
+      for(let i=0;i<=steps;i++){ pts.push([Math.round(x), Math.round(y)]); x+=x_inc; y+=y_inc; }
+      return pts;
+    }
+    function bresenham(x1,y1,x2,y2){
+      let pts=[], dx=Math.abs(x2-x1), dy=Math.abs(y2-y1);
+      let sx = x1<x2?1:-1, sy = y1<y2?1:-1, err = dx-dy;
+      while(true){ pts.push([x1,y1]); if(x1===x2 && y1===y2) break; let e2=2*err; if(e2>-dy){ err-=dy; x1+=sx;} if(e2<dx){ err+=dx; y1+=sy;} }
+      return pts;
+    }
+
+    /* === UI === */
+    function drawLine(){
+      drawGrid();
+      const x1=+document.getElementById('x1').value;
+      const y1=+document.getElementById('y1').value;
+      const x2=+document.getElementById('x2').value;
+      const y2=+document.getElementById('y2').value;
+      const algo=document.getElementById('algo-line').value;
+      const points = algo==='dda'? dda(x1,y1,x2,y2) : bresenham(x1,y1,x2,y2);
+      points.forEach(([x,y])=>plot(x,y));
+    }
+
+    document.getElementById('drawLineBtn').addEventListener('click', drawLine);
+    document.getElementById('clearBtn').addEventListener('click', ()=>{drawGrid(); polyVertices.length=0; updateVertexList();});
+
+    /* === Polygon Interactivity === */
+    const polyVertices = [];
+    function updateVertexList(){
+      document.getElementById('polyVertexList').textContent = 'Verteks: ' + polyVertices.map(v=>`(${v[0]},${v[1]})`).join(', ');
+    }
+    cvs.addEventListener('click', e=>{
+      const rect=cvs.getBoundingClientRect();
+      const mx=e.clientX-rect.left, my=e.clientY-rect.top;
+      // inverse mapping
+      const lx=Math.round((mx-ORIGIN.x)/STEP);
+      const ly=Math.round((ORIGIN.y-my)/STEP);
+      polyVertices.push([lx,ly]);
+      plot(lx,ly,'#0ea5e9');
+      updateVertexList();
+    });
+
+    function scanlineFill(vertices){
+      if(vertices.length<3) return;
+      // find ymin,ymax
+      let ys=vertices.map(v=>v[1]);
+      let ymin=Math.min(...ys), ymax=Math.max(...ys);
+      for(let y=ymin;y<=ymax;y++){
+        let xInts=[];
+        for(let i=0;i<vertices.length;i++){
+          let [x1,y1]=vertices[i];
+          let [x2,y2]=vertices[(i+1)%vertices.length];
+          if(y1==y2) continue; // hor edge ignore
+          if((y>=Math.min(y1,y2)) && (y<Math.max(y1,y2))){
+            let xInt = x1 + (y - y1)*(x2 - x1)/(y2 - y1);
+            xInts.push(xInt);
+          }
+        }
+        xInts.sort((a,b)=>a-b);
+        for(let k=0;k<xInts.length;k+=2){
+          let xStart=Math.ceil(xInts[k]);
+          let xEnd = Math.floor(xInts[k+1]);
+          for(let x=xStart;x<=xEnd;x++){ plot(x,y,'#a3e635'); }
+        }
+      }
+    }
+
+    document.getElementById('finishPolyBtn').addEventListener('click', ()=>{scanlineFill(polyVertices);});
+    document.getElementById('resetPolyBtn').addEventListener('click', ()=>{polyVertices.length=0; drawGrid(); updateVertexList();});
+
+    // initial grid
+    drawGrid();
+  </script>
+</body>
+</html>

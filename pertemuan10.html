@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Viewing & Clipping Interactive Demo</title>
+<style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: #0e0e0e;
+    color: #e6e6e6;
+    margin: 0;
+    padding: 1.5rem;
+    line-height: 1.6;
+  }
+  h1, h2 {
+    margin: 0 0 0.5rem 0;
+    color: #ffffff;
+  }
+  #viz {
+    border: 1px solid #444;
+    margin-bottom: 1.25rem;
+    background: #1b1b1b;
+  }
+  .window {
+    fill: none;
+    stroke: #00aaff;
+    stroke-width: 2;
+    stroke-dasharray: 4 2;
+  }
+  .line-original {
+    stroke: #888;
+    stroke-width: 2;
+  }
+  .line-clipped {
+    stroke: #ff4c4c;
+    stroke-width: 4;
+  }
+  .handle {
+    fill: #ffffff;
+    stroke: #000000;
+    stroke-width: 1;
+    cursor: move;
+  }
+  a {
+    color: #00aaff;
+  }
+  .math-block {
+    background: #262626;
+    padding: 0.75rem 1rem;
+    border-left: 4px solid #00aaff;
+    margin-bottom: 1.25rem;
+    overflow-x: auto;
+  }
+</style>
+<!-- Dependensi -->
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<!-- MathJax 3 untuk LaTeX -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+</head>
+<body>
+  <h1>Visualisasi <em>Viewing</em> &amp; <em>Clipping</em></h1>
+  <p>
+    Seret titik-titik pada ujung segmen garis untuk melihat bagaimana algoritma
+    <strong>Cohen–Sutherland line clipping</strong> memotong bagian garis yang
+    berada di luar window berwarna biru.
+  </p>
+  <div id="viz"></div>
+
+  <h2>Transformasi Window → Viewport</h2>
+  <p class="math-block">
+    \[
+    x_v = x_{min}^{v} + \frac{(x_w - x_{min}^{w})(x_{max}^{v} - x_{min}^{v})}{x_{max}^{w} - x_{min}^{w}},\quad
+    y_v = y_{min}^{v} + \frac{(y_w - y_{min}^{w})(y_{max}^{v} - y_{min}^{v})}{y_{max}^{w} - y_{min}^{w}}
+    \]
+  </p>
+  <p>
+    Rumus di atas diambil dari materi kuliah Komputer Grafik – <em>Viewing dan
+    Clipping</em>.fileciteturn0file0
+  </p>
+
+<script>
+  // Ukuran SVG
+  const width = 600,
+        height = 400;
+
+  const svg = d3.select('#viz')
+                .append('svg')
+                .attr('width', width)
+                .attr('height', height);
+
+  // Definisi window (area clipping)
+  const windowRect = { x: 150, y: 100, width: 300, height: 200 };
+
+  // Gambar window
+  svg.append('rect')
+     .attr('class', 'window')
+     .attr('x', windowRect.x)
+     .attr('y', windowRect.y)
+     .attr('width', windowRect.width)
+     .attr('height', windowRect.height);
+
+  // Data untuk segmen garis (dua endpoint)
+  const lineData = [ { x: 80,  y: 50  },
+                     { x: 520, y: 350 } ];
+
+  // Elemen garis asli (sebelum clipping)
+  const lineOriginal = svg.append('line').attr('class', 'line-original');
+  // Elemen garis hasil clipping
+  const lineClipped  = svg.append('line').attr('class', 'line-clipped');
+
+  // Konstanta bit outcode (Cohen–Sutherland)
+  const INSIDE = 0, LEFT = 1, RIGHT = 2, BOTTOM = 4, TOP = 8;
+
+  // Hitung outcode untuk titik
+  function computeOutCode(x, y, r) {
+    let code = INSIDE;
+    if (x < r.x)               code |= LEFT;
+    else if (x > r.x + r.width) code |= RIGHT;
+    if (y < r.y)               code |= TOP;   // SVG axis: y ke bawah
+    else if (y > r.y + r.height) code |= BOTTOM;
+    return code;
+  }
+
+  // Implementasi algoritma Cohen–Sutherland
+  function cohenSutherlandClip(x0, y0, x1, y1, r) {
+    let out0 = computeOutCode(x0, y0, r);
+    let out1 = computeOutCode(x1, y1, r);
+    let accept = false;
+
+    while (true) {
+      if (!(out0 | out1)) {          // Kedua titik di dalam
+        accept = true;
+        break;
+      } else if (out0 & out1) {      // Kedua titik di wilayah yang sama ⇒ di luar
+        break;
+      } else {
+        // Setidaknya satu titik di luar, pilih salah satu
+        let outCode = out0 ? out0 : out1;
+        let x, y;
+
+        // Tentukan titik perpotongan dengan salah satu sisi window
+        if (outCode & TOP) {
+          x = x0 + (x1 - x0) * (r.y - y0) / (y1 - y0);
+          y = r.y;
+        } else if (outCode & BOTTOM) {
+          x = x0 + (x1 - x0) * (r.y + r.height - y0) / (y1 - y0);
+          y = r.y + r.height;
+        } else if (outCode & RIGHT) {
+          y = y0 + (y1 - y0) * (r.x + r.width - x0) / (x1 - x0);
+          x = r.x + r.width;
+        } else if (outCode & LEFT) {
+          y = y0 + (y1 - y0) * (r.x - x0) / (x1 - x0);
+          x = r.x;
+        }
+
+        // Gantikan titik di luar dengan titik perpotongan & ulangi
+        if (outCode === out0) {
+          x0 = x; y0 = y; out0 = computeOutCode(x0, y0, r);
+        } else {
+          x1 = x; y1 = y; out1 = computeOutCode(x1, y1, r);
+        }
+      }
+    }
+    return accept ? [ { x: x0, y: y0 }, { x: x1, y: y1 } ] : null;
+  }
+
+  // Fungsi render / update
+  function update() {
+    // Garis asli
+    lineOriginal.attr('x1', lineData[0].x)
+                .attr('y1', lineData[0].y)
+                .attr('x2', lineData[1].x)
+                .attr('y2', lineData[1].y);
+
+    // Hasil clipping
+    const clipped = cohenSutherlandClip(
+      lineData[0].x, lineData[0].y,
+      lineData[1].x, lineData[1].y,
+      windowRect
+    );
+
+    if (clipped) {
+      lineClipped.style('visibility', 'visible')
+                .attr('x1', clipped[0].x)
+                .attr('y1', clipped[0].y)
+                .attr('x2', clipped[1].x)
+                .attr('y2', clipped[1].y);
+    } else {
+      lineClipped.style('visibility', 'hidden');
+    }
+  }
+
+  update();
+
+  // Drag behavior untuk endpoint
+  const drag = d3.drag()
+                 .on('drag', function (event, d) {
+                   d.x = event.x;
+                   d.y = event.y;
+                   d3.select(this)
+                     .attr('cx', d.x)
+                     .attr('cy', d.y);
+                   update();
+                 });
+
+  // Handle (circle) untuk endpoint garis
+  svg.selectAll('.handle')
+     .data(lineData)
+     .enter()
+     .append('circle')
+     .attr('class', 'handle')
+     .attr('r', 6)
+     .attr('cx', d => d.x)
+     .attr('cy', d => d.y)
+     .call(drag);
+</script>
+</body>
+</html>

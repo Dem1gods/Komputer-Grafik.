@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Grafik Penjualan Barang</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .container {
+      max-width: 900px;
+      margin: auto;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .chart-container {
+      background: #fff;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 15px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>Dashboard Penjualan Barang</h1>
+
+    <div class="chart-container">
+      <h2>Distribusi Penjualan Barang (Pie Chart)</h2>
+      <canvas id="pieChart"></canvas>
+    </div>
+
+    <div class="chart-container">
+      <h2>Tren Penjualan Laptop per Bulan (Line Chart)</h2>
+      <canvas id="lineChart"></canvas>
+    </div>
+  </div>
+
+  <script>
+    // Data barang dan total penjualan
+    const barang = ['Laptop', 'HP', 'Headset', 'Keyboard'];
+    const totalPenjualan = [320, 280, 150, 200];
+
+    // Data penjualan laptop per bulan
+    const bulan = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei'];
+    const penjualanLaptop = [50, 60, 70, 65, 75];
+
+    // Pie Chart - distribusi barang
+    new Chart(document.getElementById('pieChart'), {
+      type: 'pie',
+      data: {
+        labels: barang,
+        datasets: [{
+          label: 'Total Penjualan',
+          data: totalPenjualan,
+          backgroundColor: ['#4CAF50', '#2196F3', '#FF9800', '#E91E63'],
+          hoverOffset: 10
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          title: {
+            display: true,
+            text: 'Total Penjualan Tiap Barang'
+          }
+        }
+      }
+    });
+
+    // Line Chart - tren laptop
+    new Chart(document.getElementById('lineChart'), {
+      type: 'line',
+      data: {
+        labels: bulan,
+        datasets: [{
+          label: 'Penjualan Laptop',
+          data: penjualanLaptop,
+          borderColor: '#2196F3',
+          backgroundColor: 'rgba(33, 150, 243, 0.2)',
+          tension: 0.3,
+          fill: true
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          title: {
+            display: true,
+            text: 'Tren Penjualan Laptop per Bulan'
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>

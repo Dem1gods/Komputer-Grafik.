@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Visualisasi Komputer Grafik & Citra Digital</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #121212;
+      color: #f0f0f0;
+    }
+
+    header {
+      background: #1f1f1f;
+      padding: 1rem;
+      text-align: center;
+      font-size: 1.5rem;
+      font-weight: bold;
+      border-bottom: 1px solid #333;
+    }
+
+    nav {
+      display: flex;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+      padding: 1rem;
+      background-color: #1b1b1b;
+    }
+
+    nav button {
+      background: #333;
+      color: white;
+      border: none;
+      padding: 0.6rem 1.2rem;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: 0.2s;
+    }
+
+    nav button:hover {
+      background: #444;
+    }
+
+    section {
+      display: none;
+      padding: 2rem;
+    }
+
+    section.active {
+      display: block;
+    }
+
+    canvas {
+      background: #fff;
+      margin-top: 1rem;
+      max-width: 100%;
+    }
+
+    input[type="file"], button.filter-btn {
+      margin-top: 1rem;
+      padding: 0.4rem 1rem;
+      border-radius: 4px;
+      border: none;
+      cursor: pointer;
+      background-color: #444;
+      color: white;
+    }
+
+    #brightnessOutput {
+      margin-top: 1rem;
+      font-weight: bold;
+    }
+
+    .histogram {
+      margin-top: 2rem;
+    }
+
+    .controls {
+      margin-top: 1rem;
+      display: flex;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  Visualisasi API Grafik & Pengolahan Citra
+</header>
+
+<nav>
+  <button onclick="showSection('opengl')">OpenGL</button>
+  <button onclick="showSection('citra')">Citra Digital</button>
+  <button onclick="showSection('upload')">Uji Citra</button>
+</nav>
+
+<section id="opengl" class="active">
+  <h2>Pengenalan OpenGL</h2>
+  <p>
+    OpenGL (Open Graphics Library) adalah API standar lintas platform untuk grafik 2D dan 3D, digunakan dalam CAD, game, dan VR. 
+    OpenGL berbasis pada penggunaan elemen grafis primitif (titik, garis, poligon) dan tidak bergantung pada sistem windowing.
+  </p>
+</section>
+
+<section id="citra">
+  <h2>Pengolahan Citra Digital</h2>
+  <p>
+    Citra digital terdiri dari pixel-pixel dengan nilai intensitas warna yang dapat diolah untuk keperluan analisis atau peningkatan visual.
+  </p>
+  <ul>
+    <li><b>Brightness:</b> rata-rata nilai (R + G + B)/3</li>
+    <li><b>Kontras:</b> selisih terang-gelap antara piksel</li>
+    <li><b>Grayscale:</b> konversi keabuan dengan rumus luminance</li>
+    <li><b>Histogram:</b> distribusi nilai intensitas dalam gambar</li>
+  </ul>
+</section>
+
+<section id="upload">
+  <h2>Interaktif: Uji Citra Digital</h2>
+  <input type="file" id="imageInput" accept="image/*"><br/>
+  <div class="controls">
+    <button class="filter-btn" onclick="applyFilter('grayscale')">Grayscale</button>
+    <button class="filter-btn" onclick="applyFilter('invert')">Invert</button>
+  </div>
+  <canvas id="canvas" width="400" height="300"></canvas>
+  <div id="brightnessOutput">Brightness Rata-rata: -</div>
+  <canvas id="histogram" class="histogram" width="400" height="150"></canvas>
+</section>
+
+<script>
+  function showSection(id) {
+    document.querySelectorAll('section').forEach(s => s.classList.remove('active'));
+    document.getElementById(id).classList.add('active');
+  }
+
+  const imageInput = document.getElementById('imageInput');
+  const canvas = document.getElementById('canvas');
+  const ctx = canvas.getContext('2d');
+  const histogramCanvas = document.getElementById('histogram');
+  const hCtx = histogramCanvas.getContext('2d');
+  const output = document.getElementById('brightnessOutput');
+  let imageDataOriginal;
+
+  imageInput.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    const reader = new FileReader();
+    reader.onload = function(ev) {
+      const img = new Image();
+      img.onload = function() {
+        canvas.width = img.width;
+        canvas.height = img.height;
+        ctx.drawImage(img, 0, 0);
+        imageDataOriginal = ctx.getImageData(0, 0, img.width, img.height);
+        updateBrightnessAndHistogram();
+      }
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  function updateBrightnessAndHistogram() {
+    const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+    let total = 0;
+    const hist = new Array(256).fill(0);
+
+    for (let i = 0; i < imgData.data.length; i += 4) {
+      const r = imgData.data[i];
+      const g = imgData.data[i + 1];
+      const b = imgData.data[i + 2];
+      const brightness = Math.floor((r + g + b) / 3);
+      total += brightness;
+      hist[brightness]++;
+    }
+
+    const avg = total / (canvas.width * canvas.height);
+    output.innerText = `Brightness Rata-rata: ${avg.toFixed(2)}`;
+    drawHistogram(hist);
+  }
+
+  function drawHistogram(data) {
+    const max = Math.max(...data);
+    hCtx.clearRect(0, 0, histogramCanvas.width, histogramCanvas.height);
+    for (let i = 0; i < data.length; i++) {
+      const barHeight = (data[i] / max) * histogramCanvas.height;
+      hCtx.fillStyle = 'lime';
+      hCtx.fillRect(i, histogramCanvas.height - barHeight, 1, barHeight);
+    }
+  }
+
+  function applyFilter(type) {
+    if (!imageDataOriginal) return;
+    const data = new Uint8ClampedArray(imageDataOriginal.data);
+    for (let i = 0; i < data.length; i += 4) {
+      if (type === 'grayscale') {
+        const avg = (data[i] + data[i+1] + data[i+2]) / 3;
+        data[i] = data[i+1] = data[i+2] = avg;
+      } else if (type === 'invert') {
+        data[i] = 255 - data[i];
+        data[i+1] = 255 - data[i+1];
+        data[i+2] = 255 - data[i+2];
+      }
+    }
+    const newImgData = new ImageData(data, imageDataOriginal.width, imageDataOriginal.height);
+    ctx.putImageData(newImgData, 0, 0);
+    updateBrightnessAndHistogram();
+  }
+</script>
+
+</body>
+</html>

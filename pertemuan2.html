@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Visualisasi Titik &amp; Palet Warna</title>
+    <!-- Inline CSS so HTML & style are in one file -->
+    <style>
+        :root {
+            --bg: #fafafa;
+            --card: #ffffff;
+            --accent: #0077ff;
+            --border: #e5e7eb;
+            --radius: 1rem;
+            --shadow: 0 4px 12px rgb(0 0 0 / 0.08);
+            font-family: system-ui, -apple-system, "Segoe UI", Roboto, Helvetica,
+                Arial, sans-serif;
+        }
+
+        body {
+            margin: 0;
+            padding: 1rem;
+            background: var(--bg);
+            color: #111827;
+            display: grid;
+            gap: 2rem;
+        }
+
+        h1,
+        h2 {
+            margin: 0 0 1rem;
+        }
+
+        section.card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.5rem;
+            box-shadow: var(--shadow);
+            display: grid;
+            gap: 1.25rem;
+        }
+
+        .sliders label {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.95rem;
+        }
+
+        .sliders input[type="range"] {
+            flex: 1;
+        }
+
+        .color-box {
+            width: 100%;
+            height: 100px;
+            border-radius: var(--radius);
+            border: 1px solid var(--border);
+            box-shadow: inset 0 0 4px rgb(0 0 0 / 0.1);
+        }
+
+        pre.formula {
+            background: #f1f5f9;
+            padding: 1rem;
+            border-radius: var(--radius);
+            overflow: auto;
+            font-size: 0.85rem;
+        }
+
+        @media (min-width: 720px) {
+            body {
+                grid-template-columns: repeat(2, 1fr);
+            }
+        }
+    </style>
+
+    <!-- Chart.js for interactive bar chart -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+</head>
+
+<body>
+    <!-- Header -->
+    <header style="grid-column: 1 / -1; text-align: center;">
+        <h1>Visualisasi Titik &amp; Palet Warna</h1>
+        <p>
+            Eksplorasi konsep piksel, palet warna, serta konversi model warna RGB ↔
+            HSV secara interaktif.
+        </p>
+    </header>
+
+    <!-- RGB Interactive Section -->
+    <section class="card" id="rgb-section">
+        <h2>Eksplorasi Warna RGB</h2>
+        <div class="sliders">
+            <label>
+                R
+                <input type="range" id="sliderR" min="0" max="255" value="128" />
+                <span id="labelR">128</span>
+            </label>
+            <label>
+                G
+                <input type="range" id="sliderG" min="0" max="255" value="128" />
+                <span id="labelG">128</span>
+            </label>
+            <label>
+                B
+                <input type="range" id="sliderB" min="0" max="255" value="128" />
+                <span id="labelB">128</span>
+            </label>
+        </div>
+        <div class="color-box" id="colorBox"></div>
+        <canvas id="rgbChart" height="160"></canvas>
+        <div id="hsvOutput"><strong>HSV:</strong> (0°, 0%, 50%)</div>
+    </section>
+
+    <!-- Formula Section -->
+    <section class="card" id="formula-section">
+        <h2>Rumus Konversi RGB → HSV</h2>
+        <pre class="formula"><code>
+// Normalisasi
+R' = R / 255
+G' = G / 255
+B' = B / 255
+
+Cmax = max(R', G', B')
+Cmin = min(R', G', B')
+Δ    = Cmax - Cmin
+
+// Hue (H) dalam derajat
+if Δ = 0        → H = 0°
+else if Cmax = R'  → H = 60 × ((G' - B') / Δ mod 6)
+else if Cmax = G'  → H = 60 × ((B' - R') / Δ + 2)
+else if Cmax = B'  → H = 60 × ((R' - G') / Δ + 4)
+
+// Saturation (S)
+S = 0              jika Cmax = 0
+S = Δ / Cmax       selainnya
+
+// Value (V)
+V = Cmax
+        </code></pre>
+        <p>
+            Gunakan rumus di atas untuk menghitung <em>Hue</em>, <em>Saturation</em>,
+            dan <em>Value</em>. Nilai akhir S dan V biasanya dikali&nbsp;100 untuk
+            mendapatkan persentase.
+        </p>
+    </section>
+
+    <!-- JS Logic -->
+    <script>
+        // Grab DOM elements
+        const sliders = {
+            R: document.getElementById("sliderR"),
+            G: document.getElementById("sliderG"),
+            B: document.getElementById("sliderB"),
+        };
+        const labels = {
+            R: document.getElementById("labelR"),
+            G: document.getElementById("labelG"),
+            B: document.getElementById("labelB"),
+        };
+        const colorBox = document.getElementById("colorBox");
+        const hsvOutput = document.getElementById("hsvOutput");
+
+        // Chart.js setup
+        const ctx = document.getElementById("rgbChart").getContext("2d");
+        const rgbChart = new Chart(ctx, {
+            type: "bar",
+            data: {
+                labels: ["R", "G", "B"],
+                datasets: [
+                    {
+                        label: "Nilai Komponen (0‑255)",
+                        data: [128, 128, 128],
+                    },
+                ],
+            },
+            options: {
+                responsive: true,
+                indexAxis: "y",
+                scales: {
+                    x: {
+                        min: 0,
+                        max: 255,
+                    },
+                },
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { callbacks: { label: (ctx) => ctx.raw } },
+                },
+            },
+        });
+
+        // Helper: convert RGB to HSV (0‑360, 0‑1, 0‑1)
+        function rgbToHsv(r, g, b) {
+            const rPrime = r / 255,
+                gPrime = g / 255,
+                bPrime = b / 255;
+            const cMax = Math.max(rPrime, gPrime, bPrime);
+            const cMin = Math.min(rPrime, gPrime, bPrime);
+            const delta = cMax - cMin;
+            let h = 0;
+            if (delta !== 0) {
+                if (cMax === rPrime) {
+                    h = ((gPrime - bPrime) / delta) % 6;
+                } else if (cMax === gPrime) {
+                    h = (bPrime - rPrime) / delta + 2;
+                } else {
+                    h = (rPrime - gPrime) / delta + 4;
+                }
+                h *= 60;
+                if (h < 0) h += 360;
+            }
+            const s = cMax === 0 ? 0 : delta / cMax;
+            const v = cMax;
+            return [h, s, v];
+        }
+
+        function updateUI() {
+            const r = +sliders.R.value;
+            const g = +sliders.G.value;
+            const b = +sliders.B.value;
+            labels.R.textContent = r;
+            labels.G.textContent = g;
+            labels.B.textContent = b;
+
+            // Update color box
+            const rgbStr = `rgb(${r}, ${g}, ${b})`;
+            colorBox.style.background = rgbStr;
+
+            // Update chart
+            rgbChart.data.datasets[0].data = [r, g, b];
+            rgbChart.update();
+
+            // Update HSV text
+            const [h, s, v] = rgbToHsv(r, g, b);
+            hsvOutput.innerHTML = `<strong>HSV:</strong> (${h.toFixed(0)}°, ${(s * 100).toFixed(0)}%, ${(v * 100).toFixed(0)}%)`;
+        }
+
+        // Event listeners
+        Object.values(sliders).forEach((slider) =>
+            slider.addEventListener("input", updateUI)
+        );
+
+        // First run
+        updateUI();
+    </script>
+</body>
+</html>

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Visualisasi Transformasi 2D</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background: #f9fafb;
+      margin: 0;
+      padding: 2rem;
+      display: grid;
+      gap: 2rem;
+    }
+    section {
+      background: #fff;
+      padding: 1.5rem;
+      border-radius: 1rem;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+    }
+    h1, h2 { margin-top: 0; }
+    canvas {
+      border: 1px solid #e5e7eb;
+      border-radius: .5rem;
+      background: #fff;
+      display: block;
+      margin-top: 1rem;
+    }
+    label, input, select {
+      margin: .25rem;
+    }
+    button {
+      padding: .5rem .75rem;
+      border: none;
+      background: #2563eb;
+      color: white;
+      border-radius: .5rem;
+      cursor: pointer;
+      margin-left: .25rem;
+    }
+    pre.formula {
+      background: #f1f5f9;
+      padding: 1rem;
+      overflow: auto;
+      border-radius: .75rem;
+      font-size: .9rem;
+    }
+  </style>
+</head>
+<body>
+  <section>
+    <h1>Transformasi: Translasi dan Rotasi</h1>
+    <label>Translasi tx:</label><input type="number" id="tx" value="10">
+    <label>ty:</label><input type="number" id="ty" value="20">
+    <label>Rotasi (°):</label><input type="number" id="angle" value="45">
+    <button onclick="transformShape()">Transformasi</button>
+    <canvas id="canvas" width="400" height="400"></canvas>
+  </section>
+  <section>
+    <h2>Rumus Transformasi</h2>
+    <pre class="formula">
+// Translasi:
+x' = x + tx
+y' = y + ty
+
+// Rotasi terhadap titik pusat (xp, yp):
+x' = xp + (x - xp) * cos(θ) - (y - yp) * sin(θ)
+y' = yp + (x - xp) * sin(θ) + (y - yp) * cos(θ)
+    </pre>
+  </section>
+  <script>
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    const scale = 5;
+    const offsetX = canvas.width / 2;
+    const offsetY = canvas.height / 2;
+
+    const shape = [
+      {x: 10, y: 10},
+      {x: 30, y: 10},
+      {x: 10, y: 30},
+    ];
+
+    function clearCanvas() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // axes
+      ctx.strokeStyle = "#d1d5db";
+      ctx.beginPath();
+      ctx.moveTo(0, offsetY);
+      ctx.lineTo(canvas.width, offsetY);
+      ctx.moveTo(offsetX, 0);
+      ctx.lineTo(offsetX, canvas.height);
+      ctx.stroke();
+    }
+
+    function drawShape(points, color = "#0ea5e9") {
+      ctx.beginPath();
+      points.forEach((p, i) => {
+        const px = offsetX + p.x * scale;
+        const py = offsetY - p.y * scale;
+        i === 0 ? ctx.moveTo(px, py) : ctx.lineTo(px, py);
+      });
+      ctx.closePath();
+      ctx.fillStyle = color;
+      ctx.fill();
+    }
+
+    function transformShape() {
+      const tx = parseFloat(document.getElementById("tx").value);
+      const ty = parseFloat(document.getElementById("ty").value);
+      const angleDeg = parseFloat(document.getElementById("angle").value);
+      const angleRad = angleDeg * Math.PI / 180;
+      const cx = 10, cy = 10; // pivot rotasi
+
+      const translated = shape.map(p => ({ x: p.x + tx, y: p.y + ty }));
+      const rotated = translated.map(p => ({
+        x: cx + (p.x - cx) * Math.cos(angleRad) - (p.y - cy) * Math.sin(angleRad),
+        y: cy + (p.x - cx) * Math.sin(angleRad) + (p.y - cy) * Math.cos(angleRad)
+      }));
+
+      clearCanvas();
+      drawShape(shape, "#0ea5e9");
+      drawShape(rotated, "#ef4444");
+    }
+
+    clearCanvas();
+    drawShape(shape);
+  </script>
+</body>
+</html>

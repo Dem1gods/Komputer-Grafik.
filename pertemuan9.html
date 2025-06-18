@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Visualisasi Interaktif Dilatasi &amp; Shear</title>
+<style>
+  body{
+    font-family:Arial,Helvetica,sans-serif;
+    margin:0;
+    padding:0;
+    background:#f9fafb;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+  }
+  h1{margin-top:1rem;font-size:1.75rem;color:#1e293b;}
+  #controls{display:flex;gap:2rem;margin:1rem 0;flex-wrap:wrap;justify-content:center;}
+  .control{display:flex;flex-direction:column;align-items:center;font-size:.9rem;}
+  label{margin-bottom:0.25rem;color:#334155;}
+  input[type=range]{width:140px;}
+  canvas{border:1px solid #cbd5e1;background:#ffffff;border-radius:0.75rem;box-shadow:0 2px 5px rgba(0,0,0,0.05);}
+  .formula{max-width:700px;padding:1rem;font-size:1rem;color:#0f172a;line-height:1.55;}
+</style>
+<!-- MathJax for LaTeX rendering -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-chtml.js" defer></script>
+</head>
+<body>
+  <h1>Visualisasi Interaktif <em>Dilatasi</em> &amp; <em>Shear</em></h1>
+  <div id="controls">
+    <div class="control">
+      <label for="scaleX">Scale X (s<sub>x</sub>)</label>
+      <input type="range" id="scaleX" min="0.1" max="3" step="0.1" value="1">
+    </div>
+    <div class="control">
+      <label for="scaleY">Scale Y (s<sub>y</sub>)</label>
+      <input type="range" id="scaleY" min="0.1" max="3" step="0.1" value="1">
+    </div>
+    <div class="control">
+      <label for="shearX">Shear X (sh<sub>y</sub>)</label>
+      <input type="range" id="shearX" min="-2" max="2" step="0.1" value="0">
+    </div>
+  </div>
+
+  <canvas id="canvas" width="500" height="500"></canvas>
+
+  <div class="formula">
+    <p>Matrix Dilatasi 2D:
+      $$\displaystyle D = \begin{bmatrix} s_x & 0 \\ 0 & s_y \end{bmatrix}$$
+    </p>
+    <p>Matrix Shear terhadap sumbu X:
+      $$\displaystyle Sh_x = \begin{bmatrix} 1 & sh_y \\ 0 & 1 \end{bmatrix}$$
+    </p>
+  </div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const scaleXInput = document.getElementById('scaleX');
+const scaleYInput = document.getElementById('scaleY');
+const shearXInput = document.getElementById('shearX');
+
+// Define an original square centered at origin
+const originalShape = [
+  {x:-50,y:-50},
+  {x:50,y:-50},
+  {x:50,y:50},
+  {x:-50,y:50}
+];
+
+function draw(){
+  const sX = parseFloat(scaleXInput.value);
+  const sY = parseFloat(scaleYInput.value);
+  const shY = parseFloat(shearXInput.value);
+
+  ctx.save();
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  // move origin to center
+  ctx.translate(canvas.width/2,canvas.height/2);
+
+  // draw axes for reference
+  ctx.strokeStyle='#e2e8f0';
+  ctx.lineWidth=1;
+  ctx.beginPath();
+  ctx.moveTo(-canvas.width/2,0);ctx.lineTo(canvas.width/2,0);
+  ctx.moveTo(0,-canvas.height/2);ctx.lineTo(0,canvas.height/2);
+  ctx.stroke();
+
+  // apply transformation: dilation then shear
+  ctx.transform(sX, shY, 0, sY, 0, 0);
+
+  // draw transformed shape
+  ctx.fillStyle='#93c5fd';
+  ctx.strokeStyle='#1d4ed8';
+  ctx.lineWidth=2;
+  ctx.beginPath();
+  ctx.moveTo(originalShape[0].x, originalShape[0].y);
+  for(let i=1;i<originalShape.length;i++){
+    ctx.lineTo(originalShape[i].x, originalShape[i].y);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+
+  ctx.restore();
+}
+
+// attach listeners
+[scaleXInput,scaleYInput,shearXInput].forEach(el=>el.addEventListener('input',draw));
+draw();
+</script>
+</body>
+</html>

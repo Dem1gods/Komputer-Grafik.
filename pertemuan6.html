@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <title>Visualisasi Pewarnaan Graf</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f2f4f8;
+            padding: 20px;
+        }
+        h2, h3 {
+            color: #333;
+            text-align: center;
+        }
+        canvas {
+            border: 2px solid #ccc;
+            background: white;
+            display: block;
+            margin: 10px auto 20px auto;
+        }
+        .container {
+            margin-bottom: 30px;
+        }
+        .output, .penjelasan {
+            background: #fff;
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            margin-top: 10px;
+            box-shadow: 0 0 8px rgba(0,0,0,0.05);
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: center;
+        }
+        th {
+            background-color: #f0f0f0;
+        }
+        .btn {
+            padding: 8px 15px;
+            background: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-top: 10px;
+            border-radius: 5px;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .btn:hover {
+            background: #0056b3;
+        }
+        .legend {
+            margin-top: 10px;
+        }
+        .legend span {
+            display: inline-block;
+            width: 15px;
+            height: 15px;
+            margin-right: 5px;
+            vertical-align: middle;
+        }
+    </style>
+</head>
+<body>
+    <h2>Visualisasi Pewarnaan Graf Interaktif</h2>
+
+    <!-- Welch-Powell -->
+    <div class="container">
+        <h3>Pewarnaan Simpul (Welch-Powell)</h3>
+        <button class="btn" onclick="warnaiWelchPowell()">Jalankan Algoritma</button>
+        <canvas id="canvasWelch" width="600" height="400"></canvas>
+        <div class="output">
+            <h4>Hasil Pewarnaan</h4>
+            <table id="tabelWelch">
+                <thead><tr><th>Simpul</th><th>Derajat</th><th>Warna</th></tr></thead>
+                <tbody></tbody>
+            </table>
+            <div class="legend" id="legendWelch"></div>
+            <div id="chromWelch" style="margin-top:10px; font-weight: bold;"></div>
+        </div>
+        <div class="penjelasan" id="penjelasanWelch"></div>
+    </div>
+
+    <!-- Bipartit -->
+    <div class="container">
+        <h3>Pewarnaan Graf Bipartit</h3>
+        <canvas id="canvasBipartit" width="600" height="400"></canvas>
+        <div class="output" id="outputBipartit"></div>
+        <div style="font-weight:bold; text-align:center;">Bilangan Kromatik: 2</div>
+    </div>
+
+    <!-- Region -->
+    <div class="container">
+        <h3>Pewarnaan Region (Wilayah)</h3>
+        <canvas id="canvasRegion" width="600" height="400"></canvas>
+        <div class="output" id="outputRegion"></div>
+        <div id="chromRegion" style="margin-top:10px; font-weight: bold; text-align:center;"></div>
+    </div>
+
+    <script>
+        const warnaTersedia = ["red","blue","purple","green","yellow","orange"];
+        const simpul = ["v1","v2","v3","v4","v5","v6","v7","v8","v9","v10"];
+        const edges = {
+            v1:["v2","v3","v4","v5","v6"],
+            v2:["v1","v4","v7"],
+            v3:["v1","v5","v6"],
+            v4:["v1","v2","v6"],
+            v5:["v1","v3","v7"],
+            v6:["v1","v3","v4"],
+            v7:["v2","v5"],
+            v8:["v6","v9","v10"],
+            v9:["v8","v10"],
+            v10:["v8","v9"]
+        };
+        const posisi = {
+            v1:[300,50], v2:[100,150], v3:[500,150], v4:[200,250], v5:[400,250], v6:[300,350], v7:[100,300],
+            v8:[50,100], v9:[450,100], v10:[250,350]
+        };
+
+        function hitungDerajat() {
+            return simpul.map(s => ({simpul: s, derajat: edges[s].length})).sort((a, b) => b.derajat - a.derajat);
+        }
+
+        function warnaiWelchPowell() {
+            const ctx = document.getElementById("canvasWelch").getContext("2d");
+            ctx.clearRect(0, 0, 600, 400);
+            const urut = hitungDerajat();
+            const pewarnaan = {};
+            const langkah = [];
+            let idx = 0;
+
+            function pewarnaanLangkah() {
+                if (idx >= urut.length) return;
+                const node = urut[idx].simpul;
+                const warnaTetangga = edges[node].map(n => pewarnaan[n]).filter(Boolean);
+                const warna = warnaTersedia.find(w => !warnaTetangga.includes(w));
+                pewarnaan[node] = warna;
+                langkah.push(`${node} → Warna: <span style='color:${warna}'>${warna}</span> (Tetangga: ${edges[node].join(', ')})`);
+                gambarGraf(ctx, pewarnaan);
+                renderTabel(pewarnaan);
+                renderPenjelasan(langkah);
+                idx++;
+                setTimeout(pewarnaanLangkah, 800);
+            }
+            pewarnaanLangkah();
+        }
+
+        function gambarGraf(ctx, pewarnaan) {
+            for (let s in edges) {
+                edges[s].forEach(t => {
+                    if (simpul.indexOf(s) < simpul.indexOf(t)) {
+                        const [x1,y1] = posisi[s];
+                        const [x2,y2] = posisi[t];
+                        ctx.beginPath();
+                        ctx.moveTo(x1, y1);
+                        ctx.lineTo(x2, y2);
+                        ctx.stroke();
+                    }
+                });
+            }
+            simpul.forEach(s => {
+                const [x,y] = posisi[s];
+                ctx.beginPath();
+                ctx.fillStyle = pewarnaan[s] || "gray";
+                ctx.arc(x, y, 20, 0, 2 * Math.PI);
+                ctx.fill();
+                ctx.stroke();
+                ctx.fillStyle = "white";
+                ctx.font = "12px Arial";
+                ctx.fillText(s, x - 7, y + 5);
+            });
+        }
+
+        function renderTabel(pewarnaan) {
+            const tbody = document.querySelector("#tabelWelch tbody");
+            tbody.innerHTML = simpul.map(s => `<tr><td>${s}</td><td>${edges[s].length}</td><td style='color:${pewarnaan[s] || 'gray'}'>${pewarnaan[s] || '-'}</td></tr>`).join('');
+            const legend = warnaTersedia.map(w => `<span style='background:${w}'></span> ${w}`).join(' | ');
+            document.getElementById("legendWelch").innerHTML = legend;
+            const warnaUnik = [...new Set(Object.values(pewarnaan))].length;
+            document.getElementById("chromWelch").innerText = `Bilangan Kromatik: ${warnaUnik}`;
+        }
+
+        function renderPenjelasan(langkah) {
+            document.getElementById("penjelasanWelch").innerHTML = langkah.map((s,i) => `${i+1}. ${s}`).join("<br>");
+        }
+
+        // Bipartit
+        const partA = ["v1","v2"];
+        const partB = ["v3","v4","v5","v6"];
+        const ctxBip = document.getElementById("canvasBipartit").getContext("2d");
+        const bipPos = {
+            v1:[150,150], v2:[150,250],
+            v3:[450,100], v4:[450,180], v5:[450,260], v6:[450,340]
+        };
+        function gambarBipartit() {
+            const all = [...partA, ...partB];
+            all.forEach(s => {
+                const [x, y] = bipPos[s];
+                ctxBip.beginPath();
+                ctxBip.fillStyle = partA.includes(s) ? "#e74c3c" : "#3498db";
+                ctxBip.arc(x, y, 20, 0, 2 * Math.PI);
+                ctxBip.fill();
+                ctxBip.stroke();
+                ctxBip.fillStyle = "white";
+                ctxBip.fillText(s, x - 7, y + 5);
+            });
+            partA.forEach(a => {
+                partB.forEach(b => {
+                    ctxBip.beginPath();
+                    ctxBip.moveTo(...bipPos[a]);
+                    ctxBip.lineTo(...bipPos[b]);
+                    ctxBip.stroke();
+                });
+            });
+            document.getElementById("outputBipartit").innerHTML = `
+                Himpunan A: ${partA.join(", ")} → Merah<br>
+                Himpunan B: ${partB.join(", ")} → Biru
+            `;
+        }
+        gambarBipartit();
+
+        // Region
+        const posisiRegion = {
+            r1: [100, 100], r2: [200, 100], r3: [100, 200], r4: [200, 200],
+            r5: [300, 200], r6: [200, 300], r7: [300, 300], r8: [400, 300]
+        };
+        const regionTetangga = {
+            r1: ["r2"],
+            r2: ["r1", "r4"],
+            r3: ["r4"],
+            r4: ["r2", "r3", "r5", "r6", "r7"],
+            r5: ["r4", "r7", "r8"],
+            r6: ["r4"],
+            r7: ["r4", "r5", "r8"],
+            r8: ["r5", "r7"]
+        };
+        const warnaRegion = {};
+        Object.keys(regionTetangga).forEach(region => {
+            const warnaTetangga = regionTetangga[region].map(r => warnaRegion[r]).filter(Boolean);
+            warnaRegion[region] = warnaTersedia.find(w => !warnaTetangga.includes(w));
+        });
+
+        const ctxRegion = document.getElementById("canvasRegion").getContext("2d");
+        for (const r in regionTetangga) {
+            const [x1, y1] = posisiRegion[r];
+            regionTetangga[r].forEach(t => {
+                if (r < t) {
+                    const [x2, y2] = posisiRegion[t];
+                    ctxRegion.beginPath();
+                    ctxRegion.moveTo(x1, y1);
+                    ctxRegion.lineTo(x2, y2);
+                    ctxRegion.strokeStyle = "#000";
+                    ctxRegion.lineWidth = 2;
+                    ctxRegion.stroke();
+                }
+            });
+        }
+
+        for (const r in posisiRegion) {
+            const [x, y] = posisiRegion[r];
+            ctxRegion.beginPath();
+            ctxRegion.arc(x, y, 40, 0, Math.PI * 2);
+            ctxRegion.fillStyle = warnaRegion[r];
+            ctxRegion.fill();
+            ctxRegion.strokeStyle = "#000";
+            ctxRegion.stroke();
+            ctxRegion.fillStyle = "white";
+            ctxRegion.font = "bold 14px Arial";
+            ctxRegion.fillText(r.toUpperCase(), x - 10, y + 5);
+        }
+
+        document.getElementById("outputRegion").innerHTML = Object.entries(warnaRegion).map(([r,w]) => `<div>${r} → <span style='color:${w}'>${w}</span></div>`).join("");
+        const warnaRegionUnik = [...new Set(Object.values(warnaRegion))].length;
+        document.getElementById("chromRegion").innerText = `Bilangan Kromatik: ${warnaRegionUnik}`;
+    </script>
+</body>
+</html>

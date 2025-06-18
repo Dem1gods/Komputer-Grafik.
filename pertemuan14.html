@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Animasi "demigod" - Grafika Komputer</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background-color: #111;
+      color: white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    canvas#animationCanvas {
+      background-color: #000;
+      margin-top: 20px;
+      border: 2px solid #444;
+    }
+    #chartContainer {
+      margin-top: 40px;
+      width: 80%;
+      max-width: 600px;
+    }
+    button {
+      margin-top: 20px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: teal;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .formula {
+      margin-top: 30px;
+      background: #222;
+      padding: 20px;
+      border-radius: 10px;
+      width: 80%;
+      max-width: 600px;
+      line-height: 1.5;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Animasi "demigod" Melompat</h1>
+  <canvas id="animationCanvas" width="600" height="300"></canvas>
+  <button onclick="startAnimation()">Mulai Animasi</button>
+
+  <div class="formula">
+    <h3>🔢 Rumus Posisi Y (Loncat):</h3>
+    <p><strong>y = A × sin(f × t) + y₀</strong></p>
+    <p><em>A = amplitudo, f = frekuensi, t = waktu/frame, y₀ = posisi dasar</em></p>
+  </div>
+
+  <div id="chartContainer">
+    <canvas id="positionChart"></canvas>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script>
+    const canvas = document.getElementById('animationCanvas');
+    const ctx = canvas.getContext('2d');
+
+    let x = -100;
+    let frame = 0;
+    const speed = 3;
+    const yBase = 180;
+    const amplitude = 30;
+    const frequency = 0.15;
+    let interval = null;
+    const positions = [];
+
+    function drawCharacter(xPos, yPos) {
+      ctx.strokeStyle = "white";
+      ctx.lineWidth = 3;
+
+      // Kepala
+      ctx.beginPath();
+      ctx.arc(xPos + 40, yPos, 10, 0, 2 * Math.PI);
+      ctx.fillStyle = "white";
+      ctx.fill();
+      ctx.stroke();
+
+      // Badan
+      ctx.beginPath();
+      ctx.moveTo(xPos + 40, yPos + 10);
+      ctx.lineTo(xPos + 40, yPos + 50);
+
+      // Tangan kiri dan kanan
+      ctx.moveTo(xPos + 40, yPos + 20);
+      ctx.lineTo(xPos + 20, yPos + 40);
+      ctx.moveTo(xPos + 40, yPos + 20);
+      ctx.lineTo(xPos + 60, yPos + 40);
+
+      // Kaki kiri dan kanan
+      ctx.moveTo(xPos + 40, yPos + 50);
+      ctx.lineTo(xPos + 25, yPos + 80);
+      ctx.moveTo(xPos + 40, yPos + 50);
+      ctx.lineTo(xPos + 55, yPos + 80);
+
+      ctx.stroke();
+    }
+
+    function drawText(xText, yText) {
+      ctx.font = "24px Comic Sans MS";
+      ctx.fillStyle = `rgba(${Math.random()*255}, ${Math.random()*255}, ${Math.random()*255}, 1)`;
+      ctx.fillText("demigod", xText + 10, yText - 20);
+    }
+
+    function animate() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      const yOffset = Math.sin(frame * frequency) * amplitude;
+      const yPos = yBase + yOffset;
+
+      drawText(x, yPos);
+      drawCharacter(x, yPos);
+      x += speed;
+
+      if (x > canvas.width) {
+        x = -100;
+        frame = 0;
+        positions.length = 0;
+      }
+
+      if (frame % 10 === 0) {
+        positions.push({ x: frame, y: yPos });
+        updateChart();
+      }
+
+      frame++;
+    }
+
+    function startAnimation() {
+      clearInterval(interval);
+      x = -100;
+      frame = 0;
+      positions.length = 0;
+      interval = setInterval(animate, 40);
+    }
+
+    const chartCtx = document.getElementById('positionChart').getContext('2d');
+    const chart = new Chart(chartCtx, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{
+          label: 'Posisi Y demigod (loncat)',
+          data: [],
+          borderColor: 'lime',
+          backgroundColor: 'rgba(0,255,0,0.2)',
+          fill: true,
+          tension: 0.3
+        }]
+      },
+      options: {
+        responsive: true,
+        scales: {
+          x: {
+            title: {
+              display: true,
+              text: 'Frame'
+            }
+          },
+          y: {
+            title: {
+              display: true,
+              text: 'Posisi Y (pixel)'
+            },
+            min: 0,
+            max: 300
+          }
+        }
+      }
+    });
+
+    function updateChart() {
+      chart.data.labels = positions.map(p => p.x);
+      chart.data.datasets[0].data = positions.map(p => p.y);
+      chart.update();
+    }
+  </script>
+</body>
+</html>

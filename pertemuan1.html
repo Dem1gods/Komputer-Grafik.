@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Visualisasi Model Warna RGB vs HSV</title>
+<style>
+body {font-family: Arial, Helvetica, sans-serif; margin:0; display:flex; flex-direction:column; align-items:center; background:#f8f8f8; color:#222;}
+.container {max-width:900px; width:100%; padding:20px;}
+h1,h2 {text-align:center;}
+#colorPreview {width:150px; height:150px; border:2px solid #333; margin:20px auto; border-radius:8px;}
+.slider-group {display:flex; flex-direction:column; gap:6px;}
+.slider-group label {display:flex; justify-content:space-between; align-items:center; background:#fff; padding:8px 12px; border-radius:6px; box-shadow:0 1px 4px rgba(0,0,0,0.08);}
+.slider-group input[type=range] {flex:1; margin:0 10px; accent-color:#007bff;}
+.chart-container {display:flex; flex-wrap:wrap; justify-content:space-around; gap:20px; margin-top:30px;}
+canvas {max-width:400px; background:#fff; padding:10px; border-radius:8px; box-shadow:0 1px 4px rgba(0,0,0,0.08);}
+.formula {background:#fff; padding:15px 20px; border-radius:8px; box-shadow:0 1px 4px rgba(0,0,0,0.08); margin-top:40px; font-size:14px; line-height:1.5;}
+pre {white-space:pre-wrap; font-family: "Courier New", monospace; background:#f2f2f2; padding:10px; border-radius:6px; overflow-x:auto;}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>Perbandingan Model Warna <span style="color:#e74c3c">RGB</span> dan <span style="color:#27ae60">HSV</span></h1>
+<p>Gunakan slider di bawah untuk memilih warna RGB, lalu perhatikan bagaimana nilai HSV berubah secara interaktif.</p>
+<div id="colorPreview"></div>
+<div class="slider-group">
+<label>R: <input type="range" id="r" min="0" max="255" value="128"><span id="rVal">128</span></label>
+<label>G: <input type="range" id="g" min="0" max="255" value="128"><span id="gVal">128</span></label>
+<label>B: <input type="range" id="b" min="0" max="255" value="128"><span id="bVal">128</span></label>
+</div>
+<div class="chart-container">
+<canvas id="rgbChart"></canvas>
+<canvas id="hsvChart"></canvas>
+</div>
+<div class="formula">
+<h2>Rumus Konversi RGB → HSV</h2>
+<p>Diberikan nilai <em>R</em>, <em>G</em>, <em>B</em> ternormalisasi ke rentang [0,1]:</p>
+<pre>
+C<sub>max</sub> = max(R, G, B)
+C<sub>min</sub> = min(R, G, B)
+Δ = C<sub>max</sub> − C<sub>min</sub>
+
+Value (V) = C<sub>max</sub>
+
+Saturation (S) =
+  0                     jika C<sub>max</sub> = 0
+  Δ / C<sub>max</sub>      jika C<sub>max</sub> ≠ 0
+
+Hue (H) =
+  tidak terdefinisi       jika Δ = 0
+  60° × ((G − B) / Δ mod 6)  jika C<sub>max</sub> = R
+  60° × ((B − R) / Δ + 2)    jika C<sub>max</sub> = G
+  60° × ((R − G) / Δ + 4)    jika C<sub>max</sub> = B
+</pre>
+<p>H akhirnya dinormalisasi ke rentang 0°–360°, sedangkan S dan V umumnya dikonversi ke persen (0–100%).</p>
+</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+function rgb2hsv(r,g,b){
+  let R=r/255, G=g/255, B=b/255;
+  let Cmax=Math.max(R,G,B), Cmin=Math.min(R,G,B);
+  let delta=Cmax-Cmin;
+  let H=0;
+  if(delta===0){H=0;} else if(Cmax===R){H=60*((G-B)/delta % 6);} else if(Cmax===G){H=60*((B-R)/delta + 2);} else {H=60*((R-G)/delta + 4);} 
+  if(H<0) H+=360;
+  let S = (Cmax===0)?0:(delta/Cmax);
+  let V = Cmax;
+  return [H, S*100, V*100];
+}
+const rgbCtx=document.getElementById('rgbChart').getContext('2d');
+const hsvCtx=document.getElementById('hsvChart').getContext('2d');
+let rgbChart=new Chart(rgbCtx,{type:'bar',data:{labels:['R','G','B'],datasets:[{label:'RGB',data:[128,128,128],backgroundColor:['#e74c3c','#27ae60','#3498db']}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,max:255}}}});
+let hsvChart=new Chart(hsvCtx,{type:'bar',data:{labels:['H','S','V'],datasets:[{label:'HSV',data:[0,0,50],backgroundColor:['#f1c40f','#8e44ad','#95a5a6']}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,max:360}}}});
+function update(){
+  const r=+document.getElementById('r').value;
+  const g=+document.getElementById('g').value;
+  const b=+document.getElementById('b').value;
+  document.getElementById('rVal').textContent=r;
+  document.getElementById('gVal').textContent=g;
+  document.getElementById('bVal').textContent=b;
+  document.getElementById('colorPreview').style.background=`rgb(${r},${g},${b})`;
+  rgbChart.data.datasets[0].data=[r,g,b];
+  rgbChart.update();
+  const [h,s,v]=rgb2hsv(r,g,b);
+  hsvChart.data.datasets[0].data=[h,s,v];
+  hsvChart.update();
+}
+['r','g','b'].forEach(id=>document.getElementById(id).addEventListener('input',update));
+update();
+</script>
+</body>
+</html>

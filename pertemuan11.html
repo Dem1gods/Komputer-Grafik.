@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <title>Visualisasi Antialiasing</title>
+  <style>
+    body {
+      background-color: #1c1c1c;
+      color: #eaeaea;
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 2rem;
+    }
+    h1, h2 {
+      color: #ffffff;
+    }
+    canvas {
+      border: 1px solid #777;
+      background-color: #000;
+      display: block;
+      margin: 1rem auto;
+    }
+    .math-block {
+      background: #2d2d2d;
+      padding: 1rem;
+      margin: 1rem 0;
+      border-left: 5px solid #44f;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+  <h1>Visualisasi Teknik Antialiasing</h1>
+  <p>Visualisasi ini menunjukkan perbandingan antara gambar tanpa antialiasing dan dengan antialiasing menggunakan interpolasi supersampling (SSAA 4x).</p>
+
+  <canvas id="aliasCanvas" width="300" height="300"></canvas>
+  <canvas id="antialiasCanvas" width="300" height="300"></canvas>
+
+  <h2>Konsep Rumus Antialiasing</h2>
+  <div class="math-block">
+    Antialiasing dengan supersampling dilakukan dengan merata-rata warna dari beberapa sampel di dalam satu piksel:
+    <br><br>
+    \[\text{Warna}_{piksel} = \frac{1}{n} \sum_{i=1}^{n} \text{Warna}_{sampel_i}\]
+  </div>
+
+  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
+  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+  <script>
+    const aliasCanvas = document.getElementById("aliasCanvas");
+    const aliasCtx = aliasCanvas.getContext("2d");
+
+    const aaCanvas = document.getElementById("antialiasCanvas");
+    const aaCtx = aaCanvas.getContext("2d");
+
+    function drawCircle(ctx, smooth) {
+      const w = ctx.canvas.width;
+      const h = ctx.canvas.height;
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = "#000";
+      ctx.fillRect(0, 0, w, h);
+
+      ctx.strokeStyle = "#00ffcc";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.arc(w / 2, h / 2, 90, 0, 2 * Math.PI);
+      ctx.stroke();
+
+      if (smooth) {
+        ctx.globalAlpha = 0.25;
+        for (let dx = -1; dx <= 1; dx++) {
+          for (let dy = -1; dy <= 1; dy++) {
+            if (dx === 0 && dy === 0) continue;
+            ctx.beginPath();
+            ctx.arc(w / 2 + dx * 0.5, h / 2 + dy * 0.5, 90, 0, 2 * Math.PI);
+            ctx.stroke();
+          }
+        }
+        ctx.globalAlpha = 1;
+      }
+    }
+
+    drawCircle(aliasCtx, false); // tanpa antialiasing
+    drawCircle(aaCtx, true);     // dengan antialiasing simulasi
+  </script>
+</body>
+</html>

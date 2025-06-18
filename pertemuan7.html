@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Visualisasi Proyeksi Geometri</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background: #f9fafb;
+      margin: 0;
+      padding: 2rem;
+      display: grid;
+      gap: 2rem;
+    }
+    section {
+      background: #fff;
+      padding: 1.5rem;
+      border-radius: 1rem;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+    }
+    h1, h2 { margin-top: 0; }
+    canvas {
+      border: 1px solid #e5e7eb;
+      border-radius: .5rem;
+      background: #fff;
+      display: block;
+      margin-top: 1rem;
+    }
+    label, input, select {
+      margin: .25rem;
+    }
+    button {
+      padding: .5rem .75rem;
+      border: none;
+      background: #2563eb;
+      color: white;
+      border-radius: .5rem;
+      cursor: pointer;
+      margin-left: .25rem;
+    }
+    pre.formula {
+      background: #f1f5f9;
+      padding: 1rem;
+      overflow: auto;
+      border-radius: .75rem;
+      font-size: .9rem;
+    }
+    #result {
+      font-size: .9rem;
+      color: #374151;
+      margin-top: 1rem;
+    }
+  </style>
+</head>
+<body>
+  <section>
+    <h1>Visualisasi Proyeksi Geometri Bidang</h1>
+    <label>X:</label><input type="number" id="x" value="40">
+    <label>Y:</label><input type="number" id="y" value="40">
+    <label>Z:</label><input type="number" id="z" value="40">
+    <label>Proyeksi:</label>
+    <select id="projType">
+      <option value="ortho">Ortografik</option>
+      <option value="oblique">Oblique (Cavalier)</option>
+      <option value="perspective">Perspektif</option>
+    </select>
+    <button id="projectBtn">Proyeksikan</button>
+    <div style="position: relative;">
+      <canvas id="canvas" width="400" height="400"></canvas>
+    </div>
+    <div id="result"></div>
+  </section>
+  <section>
+    <h2>Rumus Proyeksi</h2>
+    <pre class="formula">
+// Ortografik (ke bidang XY):
+x' = x
+y' = y
+
+// Oblique (Cavalier, sudut α = 45°, L = 1):
+x' = x + z * cos(α)
+y' = y + z * sin(α)
+
+// Perspektif (pusat di Z = d):
+x' = x / (1 + z/d)
+y' = y / (1 + z/d)
+    </pre>
+  </section>
+  <script>
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    const scale = 4;
+    const offsetX = canvas.width / 2;
+    const offsetY = canvas.height / 2;
+
+    function clearCanvas() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      // Gambar sumbu
+      ctx.strokeStyle = "#d1d5db";
+      ctx.beginPath();
+      ctx.moveTo(0, offsetY);
+      ctx.lineTo(canvas.width, offsetY);
+      ctx.moveTo(offsetX, 0);
+      ctx.lineTo(offsetX, canvas.height);
+      ctx.stroke();
+
+      // Label sumbu
+      ctx.fillStyle = "#6b7280";
+      ctx.font = "12px sans-serif";
+      ctx.fillText("X", canvas.width - 10, offsetY - 6);
+      ctx.fillText("Y", offsetX + 6, 12);
+    }
+
+    function drawPoint(x, y, color = "#ef4444", label = "") {
+      ctx.fillStyle = color;
+      const px = offsetX + x * scale;
+      const py = offsetY - y * scale;
+      ctx.beginPath();
+      ctx.arc(px, py, 4, 0, Math.PI * 2);
+      ctx.fill();
+      if (label) {
+        ctx.fillStyle = "#374151";
+        ctx.font = "12px sans-serif";
+        ctx.fillText(label + ` (${x.toFixed(1)}, ${y.toFixed(1)})`, px + 6, py - 6);
+      }
+    }
+
+    function projectPoint() {
+      const x = parseFloat(document.getElementById("x").value);
+      const y = parseFloat(document.getElementById("y").value);
+      const z = parseFloat(document.getElementById("z").value);
+      const type = document.getElementById("projType").value;
+
+      let xp = 0, yp = 0;
+      if (type === "ortho") {
+        xp = x;
+        yp = y;
+      } else if (type === "oblique") {
+        const alpha = Math.PI / 4;
+        const L = 1;
+        xp = x + L * z * Math.cos(alpha);
+        yp = y + L * z * Math.sin(alpha);
+      } else if (type === "perspective") {
+        const d = 100;
+        const factor = 1 + z / d;
+        xp = x / factor;
+        yp = y / factor;
+      }
+
+      clearCanvas();
+      drawPoint(x, y, "#0ea5e9", "Titik 3D (XY)");
+      drawPoint(xp, yp, "#ef4444", "Proyeksi 2D");
+
+      document.getElementById("result").innerText = `Koordinat Proyeksi: x' = ${xp.toFixed(2)}, y' = ${yp.toFixed(2)}`;
+    }
+
+    document.getElementById("projectBtn").addEventListener("click", projectPoint);
+    clearCanvas();
+  </script>
+</body>
+</html>
