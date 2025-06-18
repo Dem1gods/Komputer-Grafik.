@@ -2,156 +2,181 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Visualisasi Algoritma Lingkaran dan Elips</title>
+  <title>Visualisasi Algoritma Lingkaran & Elips</title>
   <style>
     body {
-      font-family: system-ui, sans-serif;
-      background: #f9fafb;
       margin: 0;
-      padding: 2rem;
-      display: grid;
-      gap: 2rem;
-    }
-    section {
-      background: #fff;
-      padding: 1.5rem;
-      border-radius: 1rem;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.06);
-    }
-    h1, h2 {
-      margin-top: 0;
+      font-family: Arial, sans-serif;
+      background: #121212;
+      color: #fff;
+      text-align: center;
+      padding: 20px;
     }
     canvas {
-      border: 1px solid #e5e7eb;
-      border-radius: .5rem;
-      background: #fff;
+      background-color: #222;
+      border: 2px solid #444;
+      display: block;
+      margin: 20px auto;
     }
-    label, input {
-      margin: .5rem .25rem;
+    button, input[type=number] {
+      margin: 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background: teal;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
     }
-    pre.formula {
-      background: #f1f5f9;
-      padding: 1rem;
-      overflow: auto;
-      border-radius: .75rem;
+    .formula {
+      max-width: 800px;
+      margin: 20px auto;
+      background: #1e1e1e;
+      padding: 20px;
+      border-radius: 10px;
+      text-align: left;
+    }
+    .controls {
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
-  <section>
-    <h1>Visualisasi Lingkaran & Elips</h1>
-    <p>Gunakan algoritma midpoint untuk menggambar lingkaran dan elips berdasarkan parameter input.</p>
-    <label for="cx">Pusat X:</label><input type="number" id="cx" value="10">
-    <label for="cy">Pusat Y:</label><input type="number" id="cy" value="10">
-    <label for="r">Jari-jari (r):</label><input type="number" id="r" value="8">
+  <h1>Visualisasi Algoritma Lingkaran & Elips</h1>
+  <canvas id="circleCanvas" width="500" height="500"></canvas>
+
+  <div class="controls">
+    <label>Jari-jari Lingkaran:</label>
+    <input type="number" id="radius" value="50">
     <button onclick="drawCircle()">Gambar Lingkaran</button>
     <br>
-    <label for="rx">Semi Mayor (rx):</label><input type="number" id="rx" value="10">
-    <label for="ry">Semi Minor (ry):</label><input type="number" id="ry" value="6">
+    <label>rx:</label>
+    <input type="number" id="rx" value="100">
+    <label>ry:</label>
+    <input type="number" id="ry" value="60">
     <button onclick="drawEllipse()">Gambar Elips</button>
-    <button onclick="clearCanvas()">Bersihkan</button>
-    <canvas id="canvas" width="400" height="400"></canvas>
-  </section>
+    <button onclick="clearCanvas()">Reset</button>
+    <button onclick="drawBoth()">Gambar Keduanya</button>
+  </div>
 
-  <section>
-    <h2>Rumus Midpoint</h2>
-    <pre class="formula">// Lingkaran midpoint (pusat di (xc,yc), r integer)
-P0 = 1 - r
-Jika pk < 0: pk+1 = pk + 2x + 3
-Jika pk ≥ 0: pk+1 = pk + 2x - 2y + 5
-
-// Elips midpoint
-Region 1: p1_0 = ry^2 - rx^2*ry + (1/4)rx^2
-Region 2: p2_0 = ry^2(x+1)^2 + rx^2(y-0.5)^2 - rx^2*ry^2
-    </pre>
-  </section>
+  <div class="formula">
+    <h2>📘 Rumus & Penjelasan</h2>
+    <p><strong>Lingkaran:</strong> x² + y² = r² atau dengan midpoint algorithm menggunakan titik (x, y) dan parameter p.</p>
+    <p><strong>Midpoint Lingkaran:</strong>
+      <code>
+        P0 = 1 - r<br>
+        pk+1 = pk + 2xk+1 + 1 (jika pk &lt; 0)<br>
+        pk+1 = pk + 2xk+1 + 1 - 2yk+1 (jika pk ≥ 0)
+      </code>
+    </p>
+    <p><strong>Elips:</strong> ((x - xc)/rx)² + ((y - yc)/ry)² = 1</p>
+    <p><strong>Midpoint Elips:</strong> dibagi 2 bagian tergantung slope & dihitung dari titik (0, ry)</p>
+  </div>
 
   <script>
-    const canvas = document.getElementById('canvas');
+    const canvas = document.getElementById('circleCanvas');
     const ctx = canvas.getContext('2d');
-    const scale = 10; // 1 unit = 10 px
 
     function clearCanvas() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
 
-    function plot(x, y, color = '#dc2626') {
+    function plotPixel(x, y, color = '#0ff') {
       ctx.fillStyle = color;
-      ctx.fillRect(x * scale, canvas.height - y * scale, 2, 2);
+      ctx.fillRect(x, y, 1, 1);
+    }
+
+    function plotCirclePoints(xc, yc, x, y) {
+      const points = [
+        [xc + x, yc + y], [xc - x, yc + y],
+        [xc + x, yc - y], [xc - x, yc - y],
+        [xc + y, yc + x], [xc - y, yc + x],
+        [xc + y, yc - x], [xc - y, yc - x]
+      ];
+      for (const [px, py] of points) {
+        plotPixel(px, py, '#0ff');
+      }
     }
 
     function drawCircle() {
       clearCanvas();
-      let xc = +document.getElementById('cx').value;
-      let yc = +document.getElementById('cy').value;
-      let r = +document.getElementById('r').value;
-      let x = 0, y = r;
+      const r = parseInt(document.getElementById("radius").value);
+      let x = 0;
+      let y = r;
       let p = 1 - r;
-
-      function plotSymmetry(xc, yc, x, y) {
-        [ [x, y], [-x, y], [x, -y], [-x, -y],
-          [y, x], [-y, x], [y, -x], [-y, -x] ].forEach(([dx, dy]) => {
-            plot(xc + dx, yc + dy);
-        });
-      }
-
-      while (x <= y) {
-        plotSymmetry(xc, yc, x, y);
+      const xc = 250, yc = 250;
+      plotCirclePoints(xc, yc, x, y);
+      while (x < y) {
         x++;
         if (p < 0) {
           p += 2 * x + 1;
         } else {
           y--;
-          p += 2 * (x - y) + 1;
+          p += 2 * x + 1 - 2 * y;
         }
+        plotCirclePoints(xc, yc, x, y);
+      }
+    }
+
+    function plotEllipsePoints(xc, yc, x, y) {
+      const points = [
+        [xc + x, yc + y], [xc - x, yc + y],
+        [xc + x, yc - y], [xc - x, yc - y]
+      ];
+      for (const [px, py] of points) {
+        plotPixel(px, py, '#ff0');
       }
     }
 
     function drawEllipse() {
       clearCanvas();
-      let xc = +document.getElementById('cx').value;
-      let yc = +document.getElementById('cy').value;
-      let rx = +document.getElementById('rx').value;
-      let ry = +document.getElementById('ry').value;
-
-      let x = 0, y = ry;
-      let rx2 = rx * rx, ry2 = ry * ry;
-      let px = 0, py = 2 * rx2 * y;
-
+      const rx = parseInt(document.getElementById("rx").value);
+      const ry = parseInt(document.getElementById("ry").value);
+      let x = 0;
+      let y = ry;
+      let rx2 = rx * rx;
+      let ry2 = ry * ry;
       let p1 = ry2 - rx2 * ry + 0.25 * rx2;
-      while (px < py) {
+      let dx = 2 * ry2 * x;
+      let dy = 2 * rx2 * y;
+      const xc = 250, yc = 250;
+
+      while (dx < dy) {
         plotEllipsePoints(xc, yc, x, y);
-        x++;
-        px += 2 * ry2;
         if (p1 < 0) {
-          p1 += ry2 + px;
+          x++;
+          dx = 2 * ry2 * x;
+          p1 += dx + ry2;
         } else {
+          x++;
           y--;
-          py -= 2 * rx2;
-          p1 += ry2 + px - py;
+          dx = 2 * ry2 * x;
+          dy = 2 * rx2 * y;
+          p1 += dx - dy + ry2;
         }
       }
 
-      let p2 = ry2 * (x + 0.5) ** 2 + rx2 * (y - 1) ** 2 - rx2 * ry2;
+      let p2 = ry2 * (x + 0.5) * (x + 0.5) + rx2 * (y - 1) * (y - 1) - rx2 * ry2;
       while (y >= 0) {
         plotEllipsePoints(xc, yc, x, y);
-        y--;
-        py -= 2 * rx2;
         if (p2 > 0) {
-          p2 += rx2 - py;
+          y--;
+          dy = 2 * rx2 * y;
+          p2 += rx2 - dy;
         } else {
           x++;
-          px += 2 * ry2;
-          p2 += rx2 - py + px;
+          y--;
+          dx = 2 * ry2 * x;
+          dy = 2 * rx2 * y;
+          p2 += dx - dy + rx2;
         }
       }
     }
 
-    function plotEllipsePoints(xc, yc, x, y) {
-      [ [x, y], [-x, y], [x, -y], [-x, -y] ].forEach(([dx, dy]) => {
-        plot(xc + dx, yc + dy, '#0ea5e9');
-      });
+    function drawBoth() {
+      clearCanvas();
+      drawCircle();
+      drawEllipse();
     }
   </script>
 </body>
