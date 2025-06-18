@@ -2,62 +2,96 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Grafik Penjualan Barang</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Dashboard Penjualan Barang</title>
   <style>
     body {
       font-family: Arial, sans-serif;
       background-color: #f4f4f4;
       margin: 0;
-      padding: 20px;
+      padding: 0;
+    }
+
+    .navbar {
+      background-color: #2196F3;
+      color: white;
+      padding: 15px;
+      text-align: center;
+      font-size: 20px;
     }
 
     .container {
-      max-width: 900px;
-      margin: auto;
-    }
-
-    h1 {
-      text-align: center;
-      margin-bottom: 30px;
+      max-width: 1000px;
+      margin: 20px auto;
+      padding: 20px;
     }
 
     .chart-container {
       background: #fff;
       padding: 20px;
-      margin: 20px 0;
+      margin-bottom: 30px;
       border-radius: 15px;
       box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
     }
+
+    .export-buttons {
+      text-align: right;
+      margin-bottom: 15px;
+    }
+
+    button {
+      background-color: #2196F3;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 10px;
+      cursor: pointer;
+      margin-left: 10px;
+    }
+
+    button:hover {
+      background-color: #1976D2;
+    }
   </style>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
-  <div class="container">
-    <h1>Dashboard Penjualan Barang</h1>
 
+  <div class="navbar">Dashboard Penjualan Barang</div>
+
+  <div class="container">
     <div class="chart-container">
+      <div class="export-buttons">
+        <button onclick="exportPieChartToPDF()">Export PDF</button>
+        <button onclick="exportPieChartToCSV()">Export CSV</button>
+      </div>
       <h2>Distribusi Penjualan Barang (Pie Chart)</h2>
       <canvas id="pieChart"></canvas>
     </div>
 
     <div class="chart-container">
-      <h2>Tren Penjualan Laptop per Bulan (Line Chart)</h2>
-      <canvas id="lineChart"></canvas>
+      <div class="export-buttons">
+        <button onclick="exportLineChartToPDF()">Export PDF</button>
+        <button onclick="exportLineChartToCSV()">Export CSV</button>
+      </div>
+      <h2>Tren Penjualan Semua Item per Bulan (Line Chart)</h2>
+      <canvas id="lineChartSemua"></canvas>
     </div>
   </div>
 
   <script>
-    // Data barang dan total penjualan
     const barang = ['Laptop', 'HP', 'Headset', 'Keyboard'];
     const totalPenjualan = [320, 280, 150, 200];
-
-    // Data penjualan laptop per bulan
     const bulan = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei'];
     const penjualanLaptop = [50, 60, 70, 65, 75];
+    const penjualanHP = [40, 55, 60, 50, 75];
+    const penjualanHeadset = [20, 25, 30, 35, 40];
+    const penjualanKeyboard = [30, 35, 40, 38, 45];
 
-    // Pie Chart - distribusi barang
-    new Chart(document.getElementById('pieChart'), {
+    // PIE CHART
+    const pieCtx = document.getElementById('pieChart').getContext('2d');
+    const pieChart = new Chart(pieCtx, {
       type: 'pie',
       data: {
         labels: barang,
@@ -79,30 +113,80 @@
       }
     });
 
-    // Line Chart - tren laptop
-    new Chart(document.getElementById('lineChart'), {
+    // LINE CHART
+    const lineCtx = document.getElementById('lineChartSemua').getContext('2d');
+    const lineChart = new Chart(lineCtx, {
       type: 'line',
       data: {
         labels: bulan,
-        datasets: [{
-          label: 'Penjualan Laptop',
-          data: penjualanLaptop,
-          borderColor: '#2196F3',
-          backgroundColor: 'rgba(33, 150, 243, 0.2)',
-          tension: 0.3,
-          fill: true
-        }]
+        datasets: [
+          { label: 'Laptop', data: penjualanLaptop, borderColor: '#2196F3', tension: 0.3, fill: false },
+          { label: 'HP', data: penjualanHP, borderColor: '#4CAF50', tension: 0.3, fill: false },
+          { label: 'Headset', data: penjualanHeadset, borderColor: '#FF9800', tension: 0.3, fill: false },
+          { label: 'Keyboard', data: penjualanKeyboard, borderColor: '#E91E63', tension: 0.3, fill: false }
+        ]
       },
       options: {
         responsive: true,
         plugins: {
           title: {
             display: true,
-            text: 'Tren Penjualan Laptop per Bulan'
+            text: 'Tren Penjualan Semua Item per Bulan'
+          },
+          tooltip: {
+            mode: 'index',
+            intersect: false
           }
         }
       }
     });
+
+    // Export Pie Chart ke PDF
+    function exportPieChartToPDF() {
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF();
+      pdf.text("Distribusi Penjualan Barang", 10, 10);
+      pdf.addImage(pieChart.toBase64Image(), 'PNG', 10, 20, 180, 100);
+      pdf.save("PieChart_Penjualan.pdf");
+    }
+
+    // Export Line Chart ke PDF
+    function exportLineChartToPDF() {
+      const { jsPDF } = window.jspdf;
+      const pdf = new jsPDF();
+      pdf.text("Tren Penjualan Semua Item", 10, 10);
+      pdf.addImage(lineChart.toBase64Image(), 'PNG', 10, 20, 180, 100);
+      pdf.save("LineChart_Penjualan.pdf");
+    }
+
+    // Export Pie Chart ke CSV
+    function exportPieChartToCSV() {
+      let csv = 'Barang,Total Penjualan\n';
+      for (let i = 0; i < barang.length; i++) {
+        csv += `${barang[i]},${totalPenjualan[i]}\n`;
+      }
+      downloadCSV(csv, 'PieChart_Penjualan.csv');
+    }
+
+    // Export Line Chart ke CSV
+    function exportLineChartToCSV() {
+      let csv = 'Bulan,Laptop,HP,Headset,Keyboard\n';
+      for (let i = 0; i < bulan.length; i++) {
+        csv += `${bulan[i]},${penjualanLaptop[i]},${penjualanHP[i]},${penjualanHeadset[i]},${penjualanKeyboard[i]}\n`;
+      }
+      downloadCSV(csv, 'LineChart_Penjualan.csv');
+    }
+
+    // Fungsi download CSV
+    function downloadCSV(csvContent, filename) {
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      const url = URL.createObjectURL(blob);
+      link.href = url;
+      link.setAttribute("download", filename);
+      link.click();
+    }
   </script>
+
 </body>
 </html>
