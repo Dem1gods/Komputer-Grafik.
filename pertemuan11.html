@@ -2,86 +2,133 @@
 <html lang="id">
 <head>
   <meta charset="UTF-8">
-  <title>Visualisasi Antialiasing</title>
+  <title>Visualisasi Anti-Aliasing - Komputer Grafik</title>
   <style>
     body {
-      background-color: #1c1c1c;
-      color: #eaeaea;
-      font-family: Arial, sans-serif;
       margin: 0;
-      padding: 2rem;
-    }
-    h1, h2 {
-      color: #ffffff;
+      font-family: Arial, sans-serif;
+      background: #121212;
+      color: #fff;
+      text-align: center;
+      padding: 20px;
     }
     canvas {
-      border: 1px solid #777;
-      background-color: #000;
+      background-color: #222;
+      border: 2px solid #444;
       display: block;
-      margin: 1rem auto;
+      margin: 20px auto;
     }
-    .math-block {
-      background: #2d2d2d;
-      padding: 1rem;
-      margin: 1rem 0;
-      border-left: 5px solid #44f;
-      font-family: monospace;
+    button, select, input[type=range] {
+      margin: 10px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background: teal;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    .formula {
+      max-width: 800px;
+      margin: 20px auto;
+      background: #1e1e1e;
+      padding: 20px;
+      border-radius: 10px;
+      text-align: left;
+    }
+    .controls {
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
-  <h1>Visualisasi Teknik Antialiasing</h1>
-  <p>Visualisasi ini menunjukkan perbandingan antara gambar tanpa antialiasing dan dengan antialiasing menggunakan interpolasi supersampling (SSAA 4x).</p>
+  <h1>Visualisasi Teknik Anti-Aliasing</h1>
 
-  <canvas id="aliasCanvas" width="300" height="300"></canvas>
-  <canvas id="antialiasCanvas" width="300" height="300"></canvas>
+  <canvas id="aliasCanvas" width="600" height="300"></canvas>
 
-  <h2>Konsep Rumus Antialiasing</h2>
-  <div class="math-block">
-    Antialiasing dengan supersampling dilakukan dengan merata-rata warna dari beberapa sampel di dalam satu piksel:
-    <br><br>
-    \[\text{Warna}_{piksel} = \frac{1}{n} \sum_{i=1}^{n} \text{Warna}_{sampel_i}\]
+  <div class="controls">
+    <button onclick="drawAliased()">Garis Aliased</button>
+    <button onclick="drawAntiAliased()">Anti-Aliased</button>
+    <button onclick="drawFXAA()">Simulasi FXAA</button>
+    <button onclick="drawMSAA()">Simulasi MSAA</button>
+    <button onclick="resetCanvas()">Reset</button>
   </div>
 
-  <script src="https://polyfill.io/v3/polyfill.min.js?features=es6"></script>
-  <script id="MathJax-script" async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+  <div class="formula">
+    <h2>📘 Penjelasan dan Rumus</h2>
+    <p><strong>Aliasing</strong> adalah efek visual berupa garis patah-patah (jagged edges) akibat keterbatasan resolusi piksel.</p>
+    <p><strong>Anti-Aliasing</strong> menghaluskan garis tersebut melalui interpolasi atau sampling tambahan.</p>
+    <p><strong>Rumus Interpolasi Linear:</strong> <code>P(x) = (1 - t) * A + t * B</code></p>
+    <p><strong>FXAA:</strong> Fast Approximate AA - deteksi tepi & kaburkan piksel di sekitarnya.</p>
+    <p><strong>MSAA:</strong> Multi-Sample AA - hitung beberapa titik per piksel dan rata-ratakan warnanya.</p>
+  </div>
 
   <script>
-    const aliasCanvas = document.getElementById("aliasCanvas");
-    const aliasCtx = aliasCanvas.getContext("2d");
+    const canvas = document.getElementById('aliasCanvas');
+    const ctx = canvas.getContext('2d');
 
-    const aaCanvas = document.getElementById("antialiasCanvas");
-    const aaCtx = aaCanvas.getContext("2d");
-
-    function drawCircle(ctx, smooth) {
-      const w = ctx.canvas.width;
-      const h = ctx.canvas.height;
-      ctx.clearRect(0, 0, w, h);
-      ctx.fillStyle = "#000";
-      ctx.fillRect(0, 0, w, h);
-
-      ctx.strokeStyle = "#00ffcc";
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.arc(w / 2, h / 2, 90, 0, 2 * Math.PI);
-      ctx.stroke();
-
-      if (smooth) {
-        ctx.globalAlpha = 0.25;
-        for (let dx = -1; dx <= 1; dx++) {
-          for (let dy = -1; dy <= 1; dy++) {
-            if (dx === 0 && dy === 0) continue;
-            ctx.beginPath();
-            ctx.arc(w / 2 + dx * 0.5, h / 2 + dy * 0.5, 90, 0, 2 * Math.PI);
-            ctx.stroke();
-          }
-        }
-        ctx.globalAlpha = 1;
-      }
+    function resetCanvas() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
 
-    drawCircle(aliasCtx, false); // tanpa antialiasing
-    drawCircle(aaCtx, true);     // dengan antialiasing simulasi
+    function drawAliased() {
+      resetCanvas();
+      ctx.strokeStyle = '#fff';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(50, 250);
+      ctx.lineTo(550, 50);
+      ctx.stroke();
+      ctx.fillStyle = 'red';
+      ctx.fillText("Aliased Line (Tajam / Bergerigi)", 180, 280);
+    }
+
+    function drawAntiAliased() {
+      resetCanvas();
+      for (let i = 0; i < 500; i++) {
+        const t = i / 500;
+        const x = 50 + t * 500;
+        const y = 250 - t * 200;
+        const alpha = 1 - Math.abs((Math.round(y) - y));
+        ctx.fillStyle = `rgba(0,255,0,${alpha.toFixed(2)})`;
+        ctx.fillRect(x, y, 1, 1);
+      }
+      ctx.fillStyle = 'lime';
+      ctx.fillText("Anti-Aliased Line (Halus)", 200, 280);
+    }
+
+    function drawFXAA() {
+      resetCanvas();
+      for (let i = 0; i < 500; i++) {
+        const t = i / 500;
+        const x = 50 + t * 500;
+        const y = 250 - t * 200;
+        const blur = Math.random() * 0.3;
+        ctx.fillStyle = `rgba(100,255,255,${0.8 - blur})`;
+        ctx.fillRect(x, y, 1, 1);
+      }
+      ctx.fillStyle = 'cyan';
+      ctx.fillText("Simulasi FXAA (Cepat, Sedikit Buram)", 170, 280);
+    }
+
+    function drawMSAA() {
+      resetCanvas();
+      for (let i = 0; i < 500; i++) {
+        const t = i / 500;
+        const x = 50 + t * 500;
+        const y = 250 - t * 200;
+        for (let j = 0; j < 4; j++) {
+          const offset = j * 0.25;
+          const alpha = 0.25;
+          ctx.fillStyle = `rgba(255,255,100,${alpha})`;
+          ctx.fillRect(x + offset, y + offset, 1, 1);
+        }
+      }
+      ctx.fillStyle = 'yellow';
+      ctx.fillText("Simulasi MSAA (4 sampel per piksel)", 170, 280);
+    }
+
+    drawAliased();
   </script>
 </body>
 </html>
