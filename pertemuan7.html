@@ -1,165 +1,250 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Visualisasi Proyeksi Geometri</title>
+  <meta charset="UTF-8">
+  <title>Proyeksi Geometri Bidang - Interaktif</title>
   <style>
     body {
-      font-family: system-ui, sans-serif;
-      background: #f9fafb;
       margin: 0;
-      padding: 2rem;
-      display: grid;
-      gap: 2rem;
+      background: #111;
+      color: #eee;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 20px;
     }
-    section {
-      background: #fff;
-      padding: 1.5rem;
-      border-radius: 1rem;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.06);
-    }
-    h1, h2 { margin-top: 0; }
     canvas {
-      border: 1px solid #e5e7eb;
-      border-radius: .5rem;
-      background: #fff;
+      background: #222;
+      border: 2px solid #444;
+      margin: 20px auto;
       display: block;
-      margin-top: 1rem;
     }
-    label, input, select {
-      margin: .25rem;
+    select, button, input[type=range] {
+      margin: 10px;
+      padding: 10px;
+      font-size: 16px;
     }
-    button {
-      padding: .5rem .75rem;
-      border: none;
-      background: #2563eb;
-      color: white;
-      border-radius: .5rem;
-      cursor: pointer;
-      margin-left: .25rem;
+    .formula, .controls {
+      background: #222;
+      padding: 20px;
+      margin: 20px auto;
+      border-radius: 8px;
+      max-width: 700px;
+      text-align: left;
     }
-    pre.formula {
-      background: #f1f5f9;
-      padding: 1rem;
-      overflow: auto;
-      border-radius: .75rem;
-      font-size: .9rem;
-    }
-    #result {
-      font-size: .9rem;
-      color: #374151;
-      margin-top: 1rem;
+    label {
+      color: #ccc;
     }
   </style>
 </head>
 <body>
-  <section>
-    <h1>Visualisasi Proyeksi Geometri Bidang</h1>
-    <label>X:</label><input type="number" id="x" value="40">
-    <label>Y:</label><input type="number" id="y" value="40">
-    <label>Z:</label><input type="number" id="z" value="40">
-    <label>Proyeksi:</label>
-    <select id="projType">
-      <option value="ortho">Ortografik</option>
-      <option value="oblique">Oblique (Cavalier)</option>
-      <option value="perspective">Perspektif</option>
-    </select>
-    <button id="projectBtn">Proyeksikan</button>
-    <div style="position: relative;">
-      <canvas id="canvas" width="400" height="400"></canvas>
-    </div>
-    <div id="result"></div>
-  </section>
-  <section>
-    <h2>Rumus Proyeksi</h2>
-    <pre class="formula">
-// Ortografik (ke bidang XY):
-x' = x
-y' = y
+<h1>Visualisasi Proyeksi Geometri Bidang</h1>
+<div class="controls">
+  <label for="projectionType">Pilih Jenis Proyeksi:</label>
+  <select id="projectionType">
+    <option value="orthographic">Orthographic</option>
+    <option value="isometric">Isometric</option>
+    <option value="oblique">Oblique</option>
+    <option value="perspective">Perspective</option>
+  </select>
+  <br>
+  <label>Sudut Oblique (a): <span id="angleLabel">45</span>°</label>
+  <input type="range" id="angleInput" min="0" max="90" value="45">
+  <br>
+  <label>Kecepatan Rotasi:</label>
+  <input type="range" id="speedInput" min="1" max="10" value="1">
+  <span id="speedLabel">1</span>
+  <br>
+  <button id="startBtn">Mulai Proyeksi</button>
+  <button id="pauseBtn">⏸️ Jeda</button>
+  <button onclick="reset()">Reset</button>
+</div>
+<canvas id="canvas" width="600" height="400"></canvas>
 
-// Oblique (Cavalier, sudut α = 45°, L = 1):
-x' = x + z * cos(α)
-y' = y + z * sin(α)
+<div class="formula">
+  <h2>Rumus Proyeksi</h2>
+  <p><strong>Orthographic:</strong> (xp, yp) = (x, y)</p>
+  <p><strong>Isometric:</strong> (xp, yp) = (x - z)*cos(30°), (y - z)*sin(30°)</p>
+  <p><strong>Oblique:</strong> (xp, yp) = (x + z * cos(a)), (y + z * sin(a))</p>
+  <p><strong>Perspective:</strong> (xp, yp) = (x / (1 + z * r), y / (1 + z * r))</p>
+</div>
 
-// Perspektif (pusat di Z = d):
-x' = x / (1 + z/d)
-y' = y / (1 + z/d)
-    </pre>
-  </section>
-  <script>
-    const canvas = document.getElementById("canvas");
-    const ctx = canvas.getContext("2d");
-    const scale = 4;
-    const offsetX = canvas.width / 2;
-    const offsetY = canvas.height / 2;
+<canvas id="chart" width="600" height="300"></canvas>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+const angleInput = document.getElementById('angleInput');
+const angleLabel = document.getElementById('angleLabel');
+const speedInput = document.getElementById('speedInput');
+const speedLabel = document.getElementById('speedLabel');
+const projectionType = document.getElementById('projectionType');
+const startBtn = document.getElementById('startBtn');
+const pauseBtn = document.getElementById('pauseBtn');
 
-    function clearCanvas() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      ctx.fillStyle = "#fff";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+let cubeVertices = [];
+let animationFrame = null;
+let rotationAngle = 0;
+let isPaused = false;
+const r = 0.002;
 
-      // Gambar sumbu
-      ctx.strokeStyle = "#d1d5db";
-      ctx.beginPath();
-      ctx.moveTo(0, offsetY);
-      ctx.lineTo(canvas.width, offsetY);
-      ctx.moveTo(offsetX, 0);
-      ctx.lineTo(offsetX, canvas.height);
-      ctx.stroke();
+function generateCube(size = 100) {
+  const s = size / 2;
+  cubeVertices = [
+    { x: -s, y: -s, z: -s }, { x: s, y: -s, z: -s },
+    { x: s, y: s, z: -s }, { x: -s, y: s, z: -s },
+    { x: -s, y: -s, z: s }, { x: s, y: -s, z: s },
+    { x: s, y: s, z: s }, { x: -s, y: s, z: s },
+  ];
+}
 
-      // Label sumbu
-      ctx.fillStyle = "#6b7280";
-      ctx.font = "12px sans-serif";
-      ctx.fillText("X", canvas.width - 10, offsetY - 6);
-      ctx.fillText("Y", offsetX + 6, 12);
+generateCube();
+
+function toRadians(deg) {
+  return deg * Math.PI / 180;
+}
+
+function rotateY(p, angle) {
+  const rad = toRadians(angle);
+  const cos = Math.cos(rad);
+  const sin = Math.sin(rad);
+  return {
+    x: p.x * cos - p.z * sin,
+    y: p.y,
+    z: p.x * sin + p.z * cos
+  };
+}
+
+function project(p, type, angleDeg) {
+  let xp, yp;
+  const angle = toRadians(angleDeg);
+  switch (type) {
+    case 'orthographic':
+      xp = p.x;
+      yp = p.y;
+      break;
+    case 'isometric':
+      xp = (p.x - p.z) * Math.cos(Math.PI / 6);
+      yp = (p.y - p.z) * Math.sin(Math.PI / 6);
+      break;
+    case 'oblique':
+      xp = p.x + p.z * Math.cos(angle);
+      yp = p.y + p.z * Math.sin(angle);
+      break;
+    case 'perspective':
+      const factor = 1 / (1 + p.z * r);
+      xp = p.x * factor;
+      yp = p.y * factor;
+      break;
+    default:
+      xp = p.x; yp = p.y;
+  }
+  return { x: 300 + xp, y: 200 - yp, z: p.z };
+}
+
+function drawCube(angleY = 0) {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const type = projectionType.value;
+  const angle = parseInt(angleInput.value);
+
+  const rotated = cubeVertices.map(v => rotateY(v, angleY));
+  const projected = rotated.map(p => project(p, type, angle));
+
+  ctx.strokeStyle = "white";
+  ctx.fillStyle = "aqua";
+  const edges = [
+    [0,1],[1,2],[2,3],[3,0],
+    [4,5],[5,6],[6,7],[7,4],
+    [0,4],[1,5],[2,6],[3,7]
+  ];
+
+  edges.forEach(([a, b]) => {
+    ctx.beginPath();
+    ctx.moveTo(projected[a].x, projected[a].y);
+    ctx.lineTo(projected[b].x, projected[b].y);
+    ctx.stroke();
+  });
+
+  projected.forEach(p => {
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, 4, 0, 2 * Math.PI);
+    ctx.fill();
+  });
+
+  updateChart(projected);
+}
+
+function animateRotation() {
+  if (!isPaused) {
+    const speed = parseInt(speedInput.value);
+    rotationAngle += speed;
+    drawCube(rotationAngle);
+  }
+  animationFrame = requestAnimationFrame(animateRotation);
+}
+
+function startProjection() {
+  cancelAnimationFrame(animationFrame);
+  isPaused = false;
+  animateRotation();
+}
+
+function reset() {
+  cancelAnimationFrame(animationFrame);
+  isPaused = false;
+  rotationAngle = 0;
+  generateCube();
+  clearChart();
+  drawCube();
+}
+
+pauseBtn.addEventListener('click', () => {
+  isPaused = !isPaused;
+  pauseBtn.textContent = isPaused ? '▶️ Lanjut' : '⏸️ Jeda';
+});
+
+angleInput.addEventListener('input', () => {
+  angleLabel.textContent = angleInput.value;
+});
+
+speedInput.addEventListener('input', () => {
+  speedLabel.textContent = speedInput.value;
+});
+
+startBtn.addEventListener('click', startProjection);
+
+const chartCtx = document.getElementById('chart').getContext('2d');
+const chart = new Chart(chartCtx, {
+  type: 'line',
+  data: {
+    labels: [],
+    datasets: [{
+      label: 'Y Proyeksi terhadap Z',
+      data: [],
+      borderColor: 'lime',
+      fill: false
+    }]
+  },
+  options: {
+    scales: {
+      x: { title: { display: true, text: 'Z (kedalaman)' } },
+      y: { title: { display: true, text: 'Y Proyeksi (pixel)' }, min: 0, max: 400 }
     }
+  }
+});
 
-    function drawPoint(x, y, color = "#ef4444", label = "") {
-      ctx.fillStyle = color;
-      const px = offsetX + x * scale;
-      const py = offsetY - y * scale;
-      ctx.beginPath();
-      ctx.arc(px, py, 4, 0, Math.PI * 2);
-      ctx.fill();
-      if (label) {
-        ctx.fillStyle = "#374151";
-        ctx.font = "12px sans-serif";
-        ctx.fillText(label + ` (${x.toFixed(1)}, ${y.toFixed(1)})`, px + 6, py - 6);
-      }
-    }
+function updateChart(projectedPoints) {
+  chart.data.labels = projectedPoints.map(p => p.z.toFixed(0));
+  chart.data.datasets[0].data = projectedPoints.map(p => p.y.toFixed(2));
+  chart.update();
+}
 
-    function projectPoint() {
-      const x = parseFloat(document.getElementById("x").value);
-      const y = parseFloat(document.getElementById("y").value);
-      const z = parseFloat(document.getElementById("z").value);
-      const type = document.getElementById("projType").value;
+function clearChart() {
+  chart.data.labels = [];
+  chart.data.datasets[0].data = [];
+  chart.update();
+}
 
-      let xp = 0, yp = 0;
-      if (type === "ortho") {
-        xp = x;
-        yp = y;
-      } else if (type === "oblique") {
-        const alpha = Math.PI / 4;
-        const L = 1;
-        xp = x + L * z * Math.cos(alpha);
-        yp = y + L * z * Math.sin(alpha);
-      } else if (type === "perspective") {
-        const d = 100;
-        const factor = 1 + z / d;
-        xp = x / factor;
-        yp = y / factor;
-      }
-
-      clearCanvas();
-      drawPoint(x, y, "#0ea5e9", "Titik 3D (XY)");
-      drawPoint(xp, yp, "#ef4444", "Proyeksi 2D");
-
-      document.getElementById("result").innerText = `Koordinat Proyeksi: x' = ${xp.toFixed(2)}, y' = ${yp.toFixed(2)}`;
-    }
-
-    document.getElementById("projectBtn").addEventListener("click", projectPoint);
-    clearCanvas();
-  </script>
+drawCube();
+</script>
 </body>
 </html>
