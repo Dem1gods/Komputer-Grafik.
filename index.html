@@ -3,80 +3,290 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Dashboard Ruslan A Gani 241011400691</title>
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: Arial, sans-serif;
-    }
+  <title>Super Futuristic Dashboard Ruslan</title>
 
-    body {
-      display: flex;
-      min-height: 100vh;
-      background-color: #f4f4f4;
-    }
+<!-- Tambahkan ini di bagian <head> -->
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet" />
 
+<style>
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Inter', sans-serif;
+  }
+
+  body {
+    display: flex;
+    height: 100vh;
+    background: #1e1e2f;
+    overflow: hidden;
+  }
+
+  .particles {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  .sidebar {
+    width: 260px;
+    background-color: #2b2c3b;
+    border-right: 1px solid #3f4153;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.4s ease;
+    z-index: 2;
+  }
+
+  .sidebar.collapsed {
+    width: 70px;
+  }
+
+  .sidebar h2 {
+    text-align: center;
+    margin: 30px 0;
+    font-size: 22px;
+    color: #ffffff;
+    font-weight: 600;
+    transition: 0.4s;
+  }
+
+  .sidebar.collapsed h2 {
+    opacity: 0;
+  }
+
+  .nav {
+    flex-grow: 1;
+    overflow-y: auto;
+  }
+
+  .nav a {
+    display: flex;
+    align-items: center;
+    padding: 15px 25px;
+    color: #e0e0e0;
+    text-decoration: none;
+    transition: background 0.3s ease;
+    position: relative;
+  }
+
+  .nav a i {
+    margin-right: 20px;
+    font-size: 18px;
+    color: #a0a0b0;
+  }
+
+  .sidebar.collapsed .nav a span {
+    display: none;
+  }
+
+  .nav a:hover {
+    background-color: #3a3b4d;
+    color: #ffffff;
+  }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 15px 20px;
+    background: #2c2e3e;
+    z-index: 3;
+  }
+
+  .toggle-btn {
+    font-size: 20px;
+    cursor: pointer;
+    color: #ffffff;
+  }
+
+  .content {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    background: #1e1e2f;
+    position: relative;
+    z-index: 1;
+  }
+
+  .iframe-container {
+    flex-grow: 1;
+    margin: 20px;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 0 20px rgba(0,0,0,0.2);
+    background: #ffffff;
+  }
+
+  iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+  }
+
+  .nav::-webkit-scrollbar {
+    width: 6px;
+  }
+  .nav::-webkit-scrollbar-thumb {
+    background: #5c5c7b;
+    border-radius: 10px;
+  }
+
+  @media (max-width: 768px) {
     .sidebar {
-      width: 250px;
-      background-color: #333;
-      color: #fff;
-      padding: 20px 0;
+      position: fixed;
+      left: -260px;
+      top: 0;
+      height: 100%;
+      z-index: 5;
     }
+    .sidebar.active {
+      left: 0;
+    }
+    .sidebar.collapsed {
+      width: 260px;
+    }
+  }
 
-    .sidebar h2 {
-      text-align: center;
-      margin-bottom: 20px;
-      font-size: 22px;
-    }
+  #loading {
+    position: fixed;
+    width: 100%;
+    height: 100%;
+    background: #1e1e2f;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+  }
 
-    .sidebar a {
-      display: block;
-      padding: 12px 20px;
-      color: #fff;
-      text-decoration: none;
-      transition: background-color 0.3s;
-    }
+  .spinner {
+    border: 8px solid rgba(255,255,255,0.1);
+    border-top: 8px solid #007bff;
+    border-radius: 50%;
+    width: 70px;
+    height: 70px;
+    animation: spin 1s linear infinite;
+  }
 
-    .sidebar a:hover {
-      background-color: #444;
-    }
+  @keyframes spin {
+    0% { transform: rotate(0deg);}
+    100% { transform: rotate(360deg);}
+  }
+</style>
 
-    .content {
-      flex-grow: 1;
-      padding: 0;
-    }
 
-    iframe {
-      width: 100%;
-      height: 100vh;
-      border: none;
-    }
-  </style>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
 </head>
+
 <body>
-  <div class="sidebar">
-    <h2>Dashboard punya ruslan </h2>
-    <a href="pertemuan1.html" target="content">Pertemuan 1</a>
-    <a href="pertemuan2.html" target="content">Pertemuan 2</a>
-    <a href="pertemuan3.html" target="content">Pertemuan 3</a>
-    <a href="pertemuan4.html" target="content">Pertemuan 4</a>
-    <a href="pertemuan5.html" target="content">Pertemuan 5</a>
-    <a href="pertemuan6.html" target="content">Pertemuan 6</a>
-    <a href="pertemuan7.html" target="content">Pertemuan 7</a>
-    <a href="pertemuan8.html" target="content">Pertemuan 8</a>
-    <a href="pertemuan9.html" target="content">Pertemuan 9</a>
-    <a href="pertemuan10.html" target="content">Pertemuan 10</a>
-    <a href="pertemuan11.html" target="content">Pertemuan 11</a>
-    <a href="pertemuan12.html" target="content">Pertemuan 12</a>
-    <a href="pertemuan13.html" target="content">Pertemuan 13</a>
-    <a href="pertemuan14.html" target="content">Pertemuan 14</a>
-    <a href="tugasakhir.html" target="content">Tugas Akhir</a>
+
+  <!-- Loading Screen -->
+  <div id="loading">
+    <div class="spinner"></div>
+  </div>
+
+  <!-- Particle Background -->
+  <div class="particles">
+    <canvas id="particle-canvas"></canvas>
+  </div>
+
+  <div class="sidebar" id="sidebar">
+    <h2>DASHBOARD RUSLAN 241011400691</h2>
+<!-- () -->
+
+<div class="nav">
+  <a href="pertemuan1.html" target="content"><i class="fa-solid fa-book"></i><span>Pertemuan 1</span></a>
+  <a href="pertemuan2.html" target="content"><i class="fa-solid fa-book"></i><span>Pertemuan 2</span></a>
+  <a href="pertemuan3.html" target="content"><i class="fa-solid fa-book"></i><span>Pertemuan 3</span></a>
+  <a href="pertemuan4.html" target="content"><i class="fa-solid fa-book"></i><span>Pertemuan 4</span></a>
+  <a href="pertemuan5.html" target="content"><i class="fa-solid fa-book"></i><span>Pertemuan 5</span></a>
+  <a href="pertemuan6.html" target="content"><i class="fa-solid fa-book"></i><span>Pertemuan 6</span></a>
+  <a href="pertemuan7.html" target="content"><i class="fa-solid fa-book"></i><span>Pertemuan 7</span></a>
+  <a href="pertemuan8.html" target="content"><i class="fa-solid fa-book"></i><span>Pertemuan 8</span></a>
+  <a href="pertemuan9.html" target="content"><i class="fa-solid fa-book"></i><span>Pertemuan 9</span></a>
+  <a href="pertemuan10.html" target="content"><i class="fa-solid fa-book"></i><span>Pertemuan 10</span></a>
+  <a href="pertemuan11.html" target="content"><i class="fa-solid fa-book"></i><span>Pertemuan 11</span></a>
+  <a href="pertemuan12.html" target="content"><i class="fa-solid fa-book"></i><span>Pertemuan 12</span></a>
+  <a href="pertemuan13.html" target="content"><i class="fa-solid fa-book"></i><span>Pertemuan 13</span></a>
+  <a href="pertemuan14.html" target="content"><i class="fa-solid fa-book"></i><span>Pertemuan 14</span></a>
+  <a href="tugasakhir.html" target="content"><i class="fa-solid fa-graduation-cap"></i><span>Tugas Akhir</span></a>
+</div>
   </div>
 
   <div class="content">
-    <iframe name="content" src="pertemuan1.html"></iframe>
+    <div class="topbar">
+      <div class="toggle-btn" onclick="toggleSidebar()">
+        <i class="fa-solid fa-bars"></i>
+      </div>
+    </div>
+
+    <div class="iframe-container">
+      <iframe name="content" src="pertemuan1.html"></iframe>
+    </div>
   </div>
+
+  <script>
+    // Sidebar toggle
+    function toggleSidebar() {
+      const sidebar = document.getElementById("sidebar");
+      if(window.innerWidth <= 768){
+        sidebar.classList.toggle("active");
+      } else {
+        sidebar.classList.toggle("collapsed");
+      }
+    }
+
+    // Loading screen
+    window.onload = function() {
+      document.getElementById("loading").style.display = "none";
+    }
+
+    // Particle background
+    const canvas = document.getElementById('particle-canvas');
+    const ctx = canvas.getContext('2d');
+    let particlesArray;
+
+    function initParticles() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      particlesArray = [];
+      for (let i = 0; i < 80; i++) {
+        particlesArray.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          size: Math.random() * 2 + 1,
+          speedX: (Math.random() - 0.5) * 1,
+          speedY: (Math.random() - 0.5) * 1
+        });
+      }
+    }
+
+    function animateParticles() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      for (let p of particlesArray) {
+        p.x += p.speedX;
+        p.y += p.speedY;
+        if (p.x < 0 || p.x > canvas.width) p.speedX *= -1;
+        if (p.y < 0 || p.y > canvas.height) p.speedY *= -1;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(0,255,255,0.5)';
+        ctx.fill();
+      }
+      requestAnimationFrame(animateParticles);
+    }
+
+    window.addEventListener('resize', () => {
+      initParticles();
+    });
+
+    initParticles();
+    animateParticles();
+  </script>
+
 </body>
 </html>
